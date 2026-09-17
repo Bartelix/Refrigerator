@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 enum SortOption: String, CaseIterable, Identifiable {
+    case expiryFarthest = "Termin ważności (najdalszy)"
+    case expiryNearest = "Termin ważności (najbliższy)"
     case dateNewestFirst = "Data (najnowsze)"
     case dateOldestFirst = "Data (najstarsze)"
     case nameAZ = "Nazwa (A-Z)"
@@ -17,7 +19,7 @@ struct FoodListView: View {
     @Query private var allItems: [FoodItem]
 
     @State private var searchText = ""
-    @State private var sortOption: SortOption = .dateNewestFirst
+    @State private var sortOption: SortOption = .expiryNearest
     @State private var showingAddSheet = false
     @State private var itemToEdit: FoodItem?
     @State private var categoryFilter: FoodCategory?
@@ -39,6 +41,24 @@ struct FoodListView: View {
         }
 
         switch sortOption {
+        case .expiryNearest:
+            items.sort {
+                switch ($0.expiryDate, $1.expiryDate) {
+                case let (lhs?, rhs?): return lhs < rhs
+                case (_?, nil):        return true
+                case (nil, _?):        return false
+                case (nil, nil):       return $0.dateAdded < $1.dateAdded
+                }
+            }
+        case .expiryFarthest:
+            items.sort {
+                switch ($0.expiryDate, $1.expiryDate) {
+                case let (lhs?, rhs?): return lhs > rhs
+                case (_?, nil):        return true
+                case (nil, _?):        return false
+                case (nil, nil):       return $0.dateAdded > $1.dateAdded
+                }
+            }
         case .dateNewestFirst:
             items.sort { $0.dateAdded > $1.dateAdded }
         case .dateOldestFirst:
