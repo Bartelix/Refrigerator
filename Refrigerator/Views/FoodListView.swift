@@ -96,6 +96,17 @@ struct FoodListView: View {
                             FoodRowView(item: item)
                                 .contentShape(Rectangle())
                                 .onTapGesture { itemToEdit = item }
+                                .swipeActions(edge: .leading) {
+                                    Button {
+                                        move(item)
+                                    } label: {
+                                        Label(
+                                            "Przenieś do: \(item.location.opposite.rawValue)",
+                                            systemImage: item.location.opposite.systemImage
+                                        )
+                                    }
+                                    .tint(.blue)
+                                }
                         }
                         .onDelete(perform: deleteItems)
                     } header: {
@@ -139,6 +150,14 @@ struct FoodListView: View {
                 AddEditFoodItemView(location: location, itemToEdit: item)
             }
         }
+    }
+
+    /// Przenosi produkt do przeciwnej lokalizacji i ustawia datę włożenia na dziś.
+    private func move(_ item: FoodItem) {
+        NotificationManager.shared.cancelAllNotifications(for: item)
+        item.location = item.location.opposite
+        item.dateAdded = .now
+        NotificationManager.shared.scheduleReminders(for: item)
     }
 
     private func deleteItems(at offsets: IndexSet) {

@@ -13,6 +13,14 @@ enum StorageLocation: String, Codable, CaseIterable, Identifiable {
         case .freezer: return "snowflake"
         }
     }
+
+    /// Przeciwna lokalizacja — używana przy przenoszeniu produktu.
+    var opposite: StorageLocation {
+        switch self {
+        case .fridge: return .freezer
+        case .freezer: return .fridge
+        }
+    }
 }
 
 enum FoodCategory: String, Codable, CaseIterable, Identifiable {

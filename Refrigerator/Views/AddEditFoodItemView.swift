@@ -79,7 +79,18 @@ struct AddEditFoodItemView: View {
                     Button(isEditing ? "Zapisz" : "Dodaj") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                if isEditing {
+                if let item = itemToEdit {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            moveAndDismiss()
+                        } label: {
+                            Label(
+                                "Przenieś do: \(item.location.opposite.rawValue)",
+                                systemImage: item.location.opposite.systemImage
+                            )
+                            .symbolVariant(.fill)
+                        }
+                    }
                     ToolbarItem(placement: .destructiveAction) {
                         Button("Usuń", role: .destructive) { deleteAndDismiss() }
                     }
@@ -134,6 +145,16 @@ struct AddEditFoodItemView: View {
             NotificationManager.shared.scheduleReminders(for: newItem)
         }
 
+        dismiss()
+    }
+
+    /// Przenosi produkt do przeciwnej lokalizacji, ustawia datę włożenia na dziś i zamyka widok.
+    private func moveAndDismiss() {
+        guard let item = itemToEdit else { return }
+        NotificationManager.shared.cancelAllNotifications(for: item)
+        item.location = item.location.opposite
+        item.dateAdded = .now
+        NotificationManager.shared.scheduleReminders(for: item)
         dismiss()
     }
 
