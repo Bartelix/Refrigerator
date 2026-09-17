@@ -35,18 +35,18 @@ struct AddEditFoodItemView: View {
 
                 Section("Ilość") {
                     HStack {
-                        Text("Waga (g)")
-                        Spacer()
-                        TextField("opcjonalnie", text: $weightText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 120)
-                    }
-                    HStack {
                         Text("Ilość (szt.)")
                         Spacer()
                         TextField("opcjonalnie", text: $quantityText)
                             .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 120)
+                    }
+                    HStack {
+                        Text("Waga (g)")
+                        Spacer()
+                        TextField("opcjonalnie", text: $weightText)
+                            .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 120)
                     }
