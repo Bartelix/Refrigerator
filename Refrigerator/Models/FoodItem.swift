@@ -27,6 +27,8 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
     case beef = "Wołowina"
     case pork = "Wieprzowina"
     case poultry = "Drób"
+    case game = "Dziczyzna"
+    case mutton = "Baranina"
     case fish = "Ryby"
     case butter = "Masło"
     case dairy = "Nabiał"
