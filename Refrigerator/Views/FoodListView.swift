@@ -78,7 +78,7 @@ struct FoodListView: View {
                                 .onTapGesture { itemToEdit = item }
                         }
                         .onDelete(perform: deleteItems)
-                    } footer: {
+                    } header: {
                         Text(summaryText)
                     }
                 }
