@@ -32,11 +32,25 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
     case fish = "Ryby"
     case butter = "Masło"
     case dairy = "Nabiał"
+    case eggs = "Jajka"
     case vegetables = "Warzywa"
+    case fruits = "Owoce"
+    case sauces = "Sosy"
+    case drinks = "Napoje"
     case readyMeal = "Danie gotowe"
     case other = "Inne"
 
     var id: String { rawValue }
+
+    /// Domyślny okres przechowywania w zamrażarce (w dniach),
+    /// używany gdy przy dodawaniu nie podano terminu ważności.
+    var freezerShelfLifeDays: Int {
+        switch self {
+        case .beef, .pork, .mutton, .game: return 365
+        case .poultry, .fish, .butter: return 180
+        default: return 90
+        }
+    }
 }
 
 @Model

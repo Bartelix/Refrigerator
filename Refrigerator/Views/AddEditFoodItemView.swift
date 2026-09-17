@@ -137,6 +137,9 @@ struct AddEditFoodItemView: View {
             item.notes = finalNotes.isEmpty ? nil : finalNotes
             NotificationManager.shared.scheduleReminders(for: item)
         } else {
+            // Gdy nie podano terminu ważności, ustaw domyślny na podstawie
+            // lokalizacji i kategorii produktu.
+            let expiry = finalExpiry ?? defaultExpiryDate()
             let newItem = FoodItem(
                 name: trimmedName,
                 location: location,
@@ -144,7 +147,7 @@ struct AddEditFoodItemView: View {
                 weightInGrams: weight,
                 quantity: quantity ?? 1,
                 dateAdded: dateAdded,
-                expiryDate: finalExpiry,
+                expiryDate: expiry,
                 notes: finalNotes.isEmpty ? nil : finalNotes
             )
             modelContext.insert(newItem)
@@ -152,6 +155,20 @@ struct AddEditFoodItemView: View {
         }
 
         dismiss()
+    }
+
+    /// Domyślna data ważności, gdy użytkownik nie ustawił własnej.
+    /// - Lodówka: 3 dni od daty włożenia.
+    /// - Zamrażarka: zależnie od kategorii (365 / 180 / 90 dni).
+    private func defaultExpiryDate() -> Date {
+        let days: Int
+        switch location {
+        case .fridge:
+            days = 3
+        case .freezer:
+            days = category.freezerShelfLifeDays
+        }
+        return Calendar.current.date(byAdding: .day, value: days, to: dateAdded) ?? dateAdded
     }
 
     private func deleteAndDismiss() {
