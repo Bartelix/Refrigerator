@@ -1,5 +1,5 @@
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 /// Zarządza lokalnymi powiadomieniami (offline, bez serwera).
 ///
@@ -18,7 +18,7 @@ final class NotificationManager {
     static let shared = NotificationManager()
     private let center = UNUserNotificationCenter.current()
 
-    private let expiryReminderDaysBefore = [5, 3]
+    private let expiryReminderDaysBefore = [5, 3, 1, 0]
     private let freezerFirstReminderAfterDays = 30
     private let freezerReminderIntervalDays = 7
     private let notificationHour = 9 // godzina wysyłki, 9:00 rano
@@ -28,9 +28,10 @@ final class NotificationManager {
     // MARK: - Uprawnienia
 
     func requestAuthorizationIfNeeded() {
-        center.getNotificationSettings { settings in
+        let c = center
+        c.getNotificationSettings { settings in
             guard settings.authorizationStatus == .notDetermined else { return }
-            self.center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+            c.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         }
     }
 
@@ -42,19 +43,21 @@ final class NotificationManager {
 
         switch item.location {
         case .fridge:
-            scheduleFridgeExpiryReminders(for: item)
+            scheduleExpiryReminders(for: item)
         case .freezer:
             scheduleNextFreezerReminder(for: item)
+            scheduleExpiryReminders(for: item)
         }
     }
 
     /// Usuwa wszystkie zaplanowane powiadomienia dla produktu (wywołuj przed usunięciem produktu).
     func cancelAllNotifications(for item: FoodItem) {
         let prefix = item.id.uuidString
-        center.getPendingNotificationRequests { requests in
+        let c = center
+        c.getPendingNotificationRequests { requests in
             let idsToRemove = requests.map(\.identifier).filter { $0.hasPrefix(prefix) }
             if !idsToRemove.isEmpty {
-                self.center.removePendingNotificationRequests(withIdentifiers: idsToRemove)
+                c.removePendingNotificationRequests(withIdentifiers: idsToRemove)
             }
         }
     }
@@ -67,18 +70,24 @@ final class NotificationManager {
         }
     }
 
-    // MARK: - Lodówka: termin ważności
+    // MARK: - Termin ważności (lodówka i zamrażarka)
 
-    private func scheduleFridgeExpiryReminders(for item: FoodItem) {
+    private func scheduleExpiryReminders(for item: FoodItem) {
         guard let expiryDate = item.expiryDate else { return }
 
         for daysBefore in expiryReminderDaysBefore {
-            guard let triggerDate = Calendar.current.date(byAdding: .day, value: -daysBefore, to: expiryDate),
-                  triggerDate > .now else { continue }
+            let triggerDate: Date
+            if daysBefore == 0 {
+                triggerDate = expiryDate
+            } else {
+                guard let d = Calendar.current.date(byAdding: .day, value: -daysBefore, to: expiryDate) else { continue }
+                triggerDate = d
+            }
+            guard triggerDate > .now else { continue }
 
             let content = UNMutableNotificationContent()
-            content.title = "Kończy się termin ważności"
-            content.body = "\(item.name) — termin ważności za \(daysBefore) \(dayWord(daysBefore))"
+            content.title = expiryTitle(daysBefore: daysBefore)
+            content.body = expiryBody(for: item, daysBefore: daysBefore)
             content.sound = .default
 
             schedule(
@@ -86,6 +95,22 @@ final class NotificationManager {
                 at: triggerDate,
                 identifier: "\(item.id.uuidString)-expiry-\(daysBefore)"
             )
+        }
+    }
+
+    private func expiryTitle(daysBefore: Int) -> String {
+        switch daysBefore {
+        case 0: return "Termin ważności mija dziś"
+        case 1: return "Termin ważności mija jutro"
+        default: return "Zbliża się termin ważności"
+        }
+    }
+
+    private func expiryBody(for item: FoodItem, daysBefore: Int) -> String {
+        switch daysBefore {
+        case 0: return "\(item.name) — ostatni dzień ważności"
+        case 1: return "\(item.name) — wygasa jutro"
+        default: return "\(item.name) — termin ważności za \(daysBefore) \(dayWord(daysBefore))"
         }
     }
 

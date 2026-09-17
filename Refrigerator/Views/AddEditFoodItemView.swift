@@ -58,11 +58,9 @@ struct AddEditFoodItemView: View {
                         displayedComponents: .date
                     )
 
-                    if location == .fridge {
-                        Toggle("Ustaw termin ważności", isOn: $hasExpiryDate)
-                        if hasExpiryDate {
-                            DatePicker("Ważne do", selection: $expiryDate, displayedComponents: .date)
-                        }
+                    Toggle("Ustaw termin ważności", isOn: $hasExpiryDate)
+                    if hasExpiryDate {
+                        DatePicker("Ważne do", selection: $expiryDate, displayedComponents: .date)
                     }
                 }
 
@@ -109,7 +107,7 @@ struct AddEditFoodItemView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let weight = Double(weightText.replacingOccurrences(of: ",", with: "."))
         let quantity = Int(quantityText)
-        let finalExpiry = (location == .fridge && hasExpiryDate) ? expiryDate : nil
+        let finalExpiry = hasExpiryDate ? expiryDate : nil
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let item = itemToEdit {
