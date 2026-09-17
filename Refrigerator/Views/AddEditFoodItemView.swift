@@ -136,7 +136,7 @@ struct AddEditFoodItemView: View {
                 location: location,
                 category: category,
                 weightInGrams: weight,
-                quantity: quantity,
+                quantity: quantity ?? 1,
                 dateAdded: dateAdded,
                 expiryDate: finalExpiry,
                 notes: finalNotes.isEmpty ? nil : finalNotes
