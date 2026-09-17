@@ -22,6 +22,7 @@ struct FoodListView: View {
     @State private var sortOption: SortOption = .expiryNearest
     @State private var showingAddSheet = false
     @State private var itemToEdit: FoodItem?
+    @State private var itemToMove: FoodItem?
     @State private var categoryFilter: FoodCategory?
 
     init(location: StorageLocation) {
@@ -98,7 +99,7 @@ struct FoodListView: View {
                                 .onTapGesture { itemToEdit = item }
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        move(item)
+                                        itemToMove = item
                                     } label: {
                                         Label(
                                             "Przenieś do: \(item.location.opposite.rawValue)",
@@ -149,15 +150,10 @@ struct FoodListView: View {
             .sheet(item: $itemToEdit) { item in
                 AddEditFoodItemView(location: location, itemToEdit: item)
             }
+            .sheet(item: $itemToMove) { item in
+                MoveFoodItemView(item: item)
+            }
         }
-    }
-
-    /// Przenosi produkt do przeciwnej lokalizacji i ustawia datę włożenia na dziś.
-    private func move(_ item: FoodItem) {
-        NotificationManager.shared.cancelAllNotifications(for: item)
-        item.location = item.location.opposite
-        item.dateAdded = .now
-        NotificationManager.shared.scheduleReminders(for: item)
     }
 
     private func deleteItems(at offsets: IndexSet) {

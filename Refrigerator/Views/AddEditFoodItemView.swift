@@ -16,6 +16,7 @@ struct AddEditFoodItemView: View {
     @State private var hasExpiryDate: Bool = false
     @State private var expiryDate: Date = .now.addingTimeInterval(60 * 60 * 24 * 7)
     @State private var notes: String = ""
+    @State private var showingMoveSheet = false
 
     private var isEditing: Bool { itemToEdit != nil }
 
@@ -82,7 +83,7 @@ struct AddEditFoodItemView: View {
                 if let item = itemToEdit {
                     ToolbarItem(placement: .topBarLeading) {
                         Button {
-                            moveAndDismiss()
+                            showingMoveSheet = true
                         } label: {
                             Label(
                                 "Przenieś do: \(item.location.opposite.rawValue)",
@@ -97,6 +98,11 @@ struct AddEditFoodItemView: View {
                 }
             }
             .onAppear(perform: populateIfEditing)
+            .sheet(isPresented: $showingMoveSheet) {
+                if let item = itemToEdit {
+                    MoveFoodItemView(item: item, onComplete: { dismiss() })
+                }
+            }
         }
     }
 
@@ -145,16 +151,6 @@ struct AddEditFoodItemView: View {
             NotificationManager.shared.scheduleReminders(for: newItem)
         }
 
-        dismiss()
-    }
-
-    /// Przenosi produkt do przeciwnej lokalizacji, ustawia datę włożenia na dziś i zamyka widok.
-    private func moveAndDismiss() {
-        guard let item = itemToEdit else { return }
-        NotificationManager.shared.cancelAllNotifications(for: item)
-        item.location = item.location.opposite
-        item.dateAdded = .now
-        NotificationManager.shared.scheduleReminders(for: item)
         dismiss()
     }
 
