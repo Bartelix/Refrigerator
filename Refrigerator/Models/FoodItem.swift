@@ -42,6 +42,16 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Domyślna kategoria „Inne” pokazywana jako pierwsza na liście,
+    /// pozostałe w kolejności deklaracji.
+    static var allCases: [FoodCategory] {
+        [.other] + [
+            .beef, .pork, .poultry, .game, .mutton, .fish,
+            .butter, .dairy, .eggs, .vegetables, .fruits,
+            .sauces, .drinks, .readyMeal
+        ]
+    }
+
     /// Domyślny okres przechowywania w zamrażarce (w dniach),
     /// używany gdy przy dodawaniu nie podano terminu ważności.
     var freezerShelfLifeDays: Int {
