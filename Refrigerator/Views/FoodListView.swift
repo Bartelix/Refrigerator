@@ -74,12 +74,23 @@ struct FoodListView: View {
     }
 
     private var summaryText: String {
-        let count = filteredAndSorted.count
-        let totalWeight = filteredAndSorted.compactMap(\.weightInGrams).reduce(0, +)
-        if totalWeight > 0 {
-            return "\(count) poz. • łącznie \(formattedWeight(totalWeight))"
+        let items = filteredAndSorted
+        let count = items.count
+        // An item's weight refers to a single piece, so the total is weight × quantity.
+        let totalQuantity = items.reduce(0) { $0 + ($1.quantity ?? 1) }
+        let totalWeight = items.reduce(0.0) { partial, item in
+            guard let weight = item.weightInGrams else { return partial }
+            return partial + weight * Double(item.quantity ?? 1)
         }
-        return "\(count) poz."
+
+        var parts = ["\(count) poz."]
+        if totalQuantity != count {
+            parts.append("\(totalQuantity) szt.")
+        }
+        if totalWeight > 0 {
+            parts.append("łącznie \(formattedWeight(totalWeight))")
+        }
+        return parts.joined(separator: " • ")
     }
 
     var body: some View {
