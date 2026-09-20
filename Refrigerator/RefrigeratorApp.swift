@@ -14,9 +14,13 @@ struct RefrigeratorApp: App {
         }
     }()
 
+    /// App-wide undo stack, so both tabs share the same history of actions.
+    @State private var undoActions = UndoActionManager()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(undoActions)
         }
         .modelContainer(sharedModelContainer)
     }

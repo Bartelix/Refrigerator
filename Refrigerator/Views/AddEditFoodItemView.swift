@@ -7,6 +7,7 @@ struct AddEditFoodItemView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(UndoActionManager.self) private var undoActions
 
     @State private var name: String = ""
     @State private var category: FoodCategory = .other
@@ -128,6 +129,7 @@ struct AddEditFoodItemView: View {
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let item = itemToEdit {
+            let previous = FoodItemSnapshot(item)
             item.name = trimmedName
             item.category = category
             item.weightInGrams = weight
@@ -136,6 +138,7 @@ struct AddEditFoodItemView: View {
             item.expiryDate = finalExpiry
             item.notes = finalNotes.isEmpty ? nil : finalNotes
             NotificationManager.shared.scheduleReminders(for: item)
+            undoActions.recordEdit(previous: previous, current: item)
         } else {
             // Gdy nie podano terminu ważności, ustaw domyślny na podstawie
             // lokalizacji i kategorii produktu.
@@ -152,6 +155,7 @@ struct AddEditFoodItemView: View {
             )
             modelContext.insert(newItem)
             NotificationManager.shared.scheduleReminders(for: newItem)
+            undoActions.recordAdd(newItem)
         }
 
         dismiss()
@@ -173,6 +177,7 @@ struct AddEditFoodItemView: View {
 
     private func deleteAndDismiss() {
         if let item = itemToEdit {
+            undoActions.recordDelete([item])
             NotificationManager.shared.cancelAllNotifications(for: item)
             modelContext.delete(item)
         }
@@ -183,4 +188,5 @@ struct AddEditFoodItemView: View {
 #Preview {
     AddEditFoodItemView(location: .freezer)
         .modelContainer(for: FoodItem.self, inMemory: true)
+        .environment(UndoActionManager())
 }

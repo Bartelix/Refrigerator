@@ -16,8 +16,10 @@ struct FoodListView: View {
     let location: StorageLocation
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(UndoActionManager.self) private var undoActions
     @Query private var allItems: [FoodItem]
 
+    @State private var undoMessage: String?
     @State private var searchText = ""
     @State private var sortOption: SortOption = .expiryNearest
     @State private var showingAddSheet = false
@@ -126,9 +128,24 @@ struct FoodListView: View {
                     }
                 }
             }
+            .overlay(alignment: .bottom) { undoToast }
             .navigationTitle(location.rawValue)
             .searchable(text: $searchText, prompt: "Szukaj po nazwie")
             .toolbar {
+                if let kind = undoActions.lastActionKind {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: performUndo) {
+                            // An explicit stack — a Label is collapsed to icon-only by the
+                            // toolbar. Only the kind of action fits next to the icon; the
+                            // full description (with the name) goes to VoiceOver.
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.uturn.backward")
+                                Text(kind.phrase)
+                            }
+                        }
+                        .accessibilityLabel("Cofnij \(undoActions.lastActionDescription ?? kind.phrase)")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Picker("Sortuj", selection: $sortOption) {
@@ -167,9 +184,38 @@ struct FoodListView: View {
         }
     }
 
+    /// Krótkie potwierdzenie cofnięcia — znika samo po chwili.
+    @ViewBuilder
+    private var undoToast: some View {
+        if let undoMessage {
+            Text(undoMessage)
+                .font(.subheadline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.regularMaterial, in: Capsule())
+                .shadow(radius: 4, y: 2)
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: undoMessage) {
+                    try? await Task.sleep(for: .seconds(2.5))
+                    withAnimation { self.undoMessage = nil }
+                }
+        }
+    }
+
+    private func performUndo() {
+        guard let description = undoActions.undoLast(in: modelContext) else { return }
+        withAnimation { undoMessage = "Cofnięto \(description)" }
+    }
+
     private func deleteItems(at offsets: IndexSet) {
-        for index in offsets {
-            let item = filteredAndSorted[index]
+        // Read the list once — it is recomputed on every access, so indexes
+        // would shift while deleting more than one item.
+        let visible = filteredAndSorted
+        let items = offsets.map { visible[$0] }
+
+        undoActions.recordDelete(items)
+        for item in items {
             NotificationManager.shared.cancelAllNotifications(for: item)
             modelContext.delete(item)
         }
@@ -186,4 +232,5 @@ func formattedWeight(_ grams: Double) -> String {
 #Preview {
     FoodListView(location: .freezer)
         .modelContainer(for: FoodItem.self, inMemory: true)
+        .environment(UndoActionManager())
 }

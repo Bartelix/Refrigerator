@@ -13,6 +13,7 @@ struct MoveFoodItemView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(UndoActionManager.self) private var undoActions
 
     @State private var quantityText: String = ""
     @State private var weightText: String = ""
@@ -129,6 +130,7 @@ struct MoveFoodItemView: View {
 
         let moveQty = parsedQuantity
         let moveWeight = parsedWeight
+        let previous = FoodItemSnapshot(item)
 
         let movingAllQuantity = item.quantity == nil || (moveQty ?? 0) >= item.quantity!
         let movingAllWeight = item.weightInGrams == nil || (moveWeight ?? 0) >= item.weightInGrams!
@@ -139,6 +141,7 @@ struct MoveFoodItemView: View {
             item.location = destination
             item.dateAdded = .now
             NotificationManager.shared.scheduleReminders(for: item)
+            undoActions.recordMove(previous: previous, createdItem: nil)
         } else {
             // Podział pozycji — nowa pozycja w miejscu docelowym, źródło pomniejszone.
             let movedItem = FoodItem(
@@ -164,6 +167,7 @@ struct MoveFoodItemView: View {
 
             NotificationManager.shared.scheduleReminders(for: item)
             NotificationManager.shared.scheduleReminders(for: movedItem)
+            undoActions.recordMove(previous: previous, createdItem: movedItem)
         }
 
         onComplete?()
@@ -182,4 +186,5 @@ struct MoveFoodItemView: View {
         )
     )
     .modelContainer(for: FoodItem.self, inMemory: true)
+    .environment(UndoActionManager())
 }

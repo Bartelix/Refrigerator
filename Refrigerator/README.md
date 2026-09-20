@@ -42,6 +42,7 @@
 - Sortowanie: po dacie (najnowsze/najstarsze) i alfabetycznie
 - Filtrowanie: wyszukiwarka po nazwie + filtr po kategorii
 - Podsumowanie na dole listy: liczba pozycji + łączna waga
+- **Cofanie akcji**: przycisk ↩ w lewym górnym rogu cofa ostatnią akcję (dodanie, edycję, usunięcie, przeniesienie). Historia jest wspólna dla obu zakładek, można cofać kolejno do 20 ostatnich akcji
 - Dane zapisywane lokalnie przez SwiftData (SQLite pod spodem), zero internetu
 - **Powiadomienia lokalne** (offline, bez serwera):
   - Lodówka: przypomnienie 5 i 3 dni przed terminem ważności
