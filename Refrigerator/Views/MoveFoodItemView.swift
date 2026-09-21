@@ -3,9 +3,9 @@ import SwiftData
 
 /// Widok konfiguracji przeniesienia produktu między lodówką a zamrażarką.
 ///
-/// Domyślnie przenoszona jest cała ilość i cała waga. Jeśli użytkownik zmieni
-/// wartość na niepełną, pozycja zostaje podzielona: do miejsca docelowego trafia
-/// nowa pozycja z wybraną ilością/wagą, a pozycja źródłowa jest odpowiednio pomniejszana.
+/// Przeniesienie odbywa się albo po ilości, albo po wadze — zależnie od tego, jak
+/// opisana jest pozycja. Waga zapisana przy pozycji dotyczy jednej sztuki, więc przy
+/// przenoszeniu części sztuk pozostaje bez zmian po obu stronach.
 struct MoveFoodItemView: View {
     let item: FoodItem
     /// Wywoływane po udanym przeniesieniu (np. aby zamknąć widok edycji).
@@ -18,27 +18,42 @@ struct MoveFoodItemView: View {
     @State private var quantityText: String = ""
     @State private var weightText: String = ""
 
-    private var destination: StorageLocation { item.location.opposite }
-    private var hasQuantity: Bool { item.quantity != nil }
-    private var hasWeight: Bool { item.weightInGrams != nil }
-
-    private var parsedQuantity: Int? {
-        guard hasQuantity else { return nil }
-        return Int(quantityText)
+    /// Sposób przenoszenia pozycji.
+    private enum MoveMode {
+        /// Dzielenie po liczbie sztuk — waga jednej sztuki pozostaje bez zmian.
+        case quantity
+        /// Dzielenie po wadze — dotyczy pozycji bez ilości lub z jedną sztuką.
+        case weight
+        /// Brak ilości i wagi — pozycja przenoszona w całości.
+        case whole
     }
 
+    private var destination: StorageLocation { item.location.opposite }
+
+    /// Pozycja z więcej niż jedną sztuką dzielona jest po ilości; pojedyncza sztuka
+    /// (lub pozycja bez ilości) z podaną wagą — po wadze.
+    private var mode: MoveMode {
+        if let quantity = item.quantity, quantity > 1 { return .quantity }
+        if item.weightInGrams != nil { return .weight }
+        if item.quantity != nil { return .quantity }
+        return .whole
+    }
+
+    private var parsedQuantity: Int? { Int(quantityText) }
+
     private var parsedWeight: Double? {
-        guard hasWeight else { return nil }
-        return Double(weightText.replacingOccurrences(of: ",", with: "."))
+        Double(weightText.replacingOccurrences(of: ",", with: "."))
     }
 
     /// Poprawność wprowadzonych wartości — musi być dodatnia i nie większa niż dostępna.
     private var isValid: Bool {
-        if hasQuantity {
-            guard let q = parsedQuantity, q > 0, q <= item.quantity! else { return false }
-        }
-        if hasWeight {
-            guard let w = parsedWeight, w > 0, w <= item.weightInGrams! else { return false }
+        switch mode {
+        case .quantity:
+            guard let quantity = parsedQuantity, quantity > 0, quantity <= (item.quantity ?? 0) else { return false }
+        case .weight:
+            guard let weight = parsedWeight, weight > 0, weight <= (item.weightInGrams ?? 0) else { return false }
+        case .whole:
+            break
         }
         return true
     }
@@ -60,40 +75,51 @@ struct MoveFoodItemView: View {
                     LabeledContent("Produkt", value: item.name)
                 }
 
-                if hasQuantity || hasWeight {
+                switch mode {
+                case .quantity:
                     Section {
-                        if hasQuantity {
-                            HStack {
-                                Text("Ilość (szt.)")
-                                Spacer()
-                                TextField("", text: $quantityText)
-                                    .keyboardType(.numberPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 120)
-                            }
-                            Text("Dostępne: \(item.quantity!) szt.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        HStack {
+                            Text("Ilość (szt.)")
+                            Spacer()
+                            TextField("", text: $quantityText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 120)
+                                .padding(.trailing, 4)
                         }
-                        if hasWeight {
-                            HStack {
-                                Text("Waga (g)")
-                                Spacer()
-                                TextField("", text: $weightText)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 120)
-                            }
-                            Text("Dostępne: \(formattedWeight(item.weightInGrams!))")
+                        Text("Dostępne: \(item.quantity ?? 0) szt.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let weight = item.weightInGrams {
+                            Text("Waga: \(formattedWeight(weight)) / szt. — bez zmian")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } header: {
-                        Text("Ile przenieść")
+                        Text("Ile przenieść (po ilości)")
                     } footer: {
-                        Text("Domyślnie przenoszona jest cała ilość i waga. Zmień wartości, aby przenieść tylko część — pozycja zostanie podzielona.")
+                        Text("Domyślnie przenoszona jest cała ilość. Zmień wartość, aby przenieść tylko część sztuk — pozycja zostanie podzielona, a waga jednej sztuki pozostanie taka sama.")
                     }
-                } else {
+                case .weight:
+                    Section {
+                        HStack {
+                            Text("Waga (g)")
+                            Spacer()
+                            TextField("", text: $weightText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 120)
+                                .padding(.trailing, 4)
+                        }
+                        Text("Dostępne: \(formattedWeight(item.weightInGrams ?? 0))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } header: {
+                        Text("Ile przenieść (po wadze)")
+                    } footer: {
+                        Text("Domyślnie przenoszona jest cała waga. Zmień wartość, aby przenieść tylko część — pozycja zostanie podzielona.")
+                    }
+                case .whole:
                     Section {
                         Text("Produkt nie ma określonej ilości ani wagi — zostanie przeniesiony w całości.")
                             .font(.caption)
@@ -117,57 +143,81 @@ struct MoveFoodItemView: View {
     }
 
     private func populateDefaults() {
-        if let q = item.quantity {
-            quantityText = String(q)
+        if let quantity = item.quantity {
+            quantityText = String(quantity)
         }
-        if let w = item.weightInGrams {
-            weightText = String(format: "%g", w)
+        if let weight = item.weightInGrams {
+            weightText = String(format: "%g", weight)
         }
     }
 
     private func performMove() {
         guard isValid else { return }
 
-        let moveQty = parsedQuantity
-        let moveWeight = parsedWeight
         let previous = FoodItemSnapshot(item)
 
-        let movingAllQuantity = item.quantity == nil || (moveQty ?? 0) >= item.quantity!
-        let movingAllWeight = item.weightInGrams == nil || (moveWeight ?? 0) >= item.weightInGrams!
+        // Ilość i waga nowej pozycji oraz to, co zostaje w pozycji źródłowej.
+        let movedQuantity: Int?
+        let movedWeight: Double?
+        let remainingQuantity: Int?
+        let remainingWeight: Double?
 
-        if movingAllQuantity && movingAllWeight {
-            // Przeniesienie całości — wystarczy zmienić lokalizację.
-            NotificationManager.shared.cancelAllNotifications(for: item)
-            item.location = destination
-            item.dateAdded = .now
-            NotificationManager.shared.scheduleReminders(for: item)
-            undoActions.recordMove(previous: previous, createdItem: nil)
-        } else {
+        switch mode {
+        case .quantity:
+            let moveQuantity = parsedQuantity ?? 0
+            movedQuantity = moveQuantity
+            // Waga dotyczy jednej sztuki, więc obie pozycje zachowują tę samą wartość.
+            movedWeight = item.weightInGrams
+            remainingQuantity = (item.quantity ?? 0) - moveQuantity
+            remainingWeight = item.weightInGrams
+        case .weight:
+            let moveWeight = parsedWeight ?? 0
+            movedQuantity = item.quantity
+            movedWeight = moveWeight
+            remainingQuantity = item.quantity
+            remainingWeight = (item.weightInGrams ?? 0) - moveWeight
+        case .whole:
+            movedQuantity = item.quantity
+            movedWeight = item.weightInGrams
+            remainingQuantity = nil
+            remainingWeight = nil
+        }
+
+        // Po podziale zostaje coś w źródle tylko wtedy, gdy zmniejszana wartość jest dodatnia.
+        let keepsRemainder: Bool
+        switch mode {
+        case .quantity: keepsRemainder = (remainingQuantity ?? 0) > 0
+        case .weight: keepsRemainder = (remainingWeight ?? 0) > 0
+        case .whole: keepsRemainder = false
+        }
+
+        if keepsRemainder {
             // Podział pozycji — nowa pozycja w miejscu docelowym, źródło pomniejszone.
             let movedItem = FoodItem(
                 name: item.name,
                 location: destination,
                 category: item.category,
-                weightInGrams: hasWeight ? moveWeight : nil,
-                quantity: hasQuantity ? moveQty : nil,
+                weightInGrams: movedWeight,
+                quantity: movedQuantity,
                 dateAdded: .now,
                 expiryDate: item.expiryDate,
                 notes: item.notes
             )
             modelContext.insert(movedItem)
 
-            if hasQuantity, let moveQty {
-                let remaining = item.quantity! - moveQty
-                item.quantity = remaining > 0 ? remaining : nil
-            }
-            if hasWeight, let moveWeight {
-                let remaining = item.weightInGrams! - moveWeight
-                item.weightInGrams = remaining > 0 ? remaining : nil
-            }
+            item.quantity = remainingQuantity
+            item.weightInGrams = remainingWeight
 
             NotificationManager.shared.scheduleReminders(for: item)
             NotificationManager.shared.scheduleReminders(for: movedItem)
             undoActions.recordMove(previous: previous, createdItem: movedItem)
+        } else {
+            // Przeniesienie całości — wystarczy zmienić lokalizację.
+            NotificationManager.shared.cancelAllNotifications(for: item)
+            item.location = destination
+            item.dateAdded = .now
+            NotificationManager.shared.scheduleReminders(for: item)
+            undoActions.recordMove(previous: previous, createdItem: nil)
         }
 
         onComplete?()
