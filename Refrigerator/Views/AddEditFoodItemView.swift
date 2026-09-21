@@ -42,6 +42,9 @@ struct AddEditFoodItemView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 120)
+                            // Keep the field away from the screen edge so it is
+                            // easier to tap on its right side.
+                            .padding(.trailing, 12)
                     }
                     HStack {
                         Text("Waga (g)")
@@ -50,6 +53,7 @@ struct AddEditFoodItemView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 120)
+                            .padding(.trailing, 12)
                     }
                 }
 
