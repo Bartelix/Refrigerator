@@ -14,7 +14,7 @@ enum StorageLocation: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Przeciwna lokalizacja — używana przy przenoszeniu produktu.
+    /// The opposite location — used when moving an item.
     var opposite: StorageLocation {
         switch self {
         case .fridge: return .freezer
@@ -42,8 +42,8 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// Domyślna kategoria „Inne” pokazywana jako pierwsza na liście,
-    /// pozostałe w kolejności deklaracji.
+    /// The default „Inne” category is shown first in the list,
+    /// the rest follow in declaration order.
     static var allCases: [FoodCategory] {
         [.other] + [
             .beef, .pork, .poultry, .game, .mutton, .fish,
@@ -52,8 +52,8 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
         ]
     }
 
-    /// Domyślny okres przechowywania w zamrażarce (w dniach),
-    /// używany gdy przy dodawaniu nie podano terminu ważności.
+    /// Default freezer shelf life (in days), used when no expiry date
+    /// was given while adding the item.
     var freezerShelfLifeDays: Int {
         switch self {
         case .beef, .pork, .mutton, .game: return 365
@@ -69,10 +69,10 @@ final class FoodItem {
     var name: String
     var location: StorageLocation
     var category: FoodCategory
-    var weightInGrams: Double?      // opcjonalna waga w gramach
-    var quantity: Int?              // opcjonalna ilość (szt.)
-    var dateAdded: Date             // data włożenia do lodówki/zamrażarki
-    var expiryDate: Date?           // tylko dla lodówki (opcjonalnie)
+    var weightInGrams: Double?      // optional weight in grams
+    var quantity: Int?              // optional quantity (pcs.)
+    var dateAdded: Date             // date the item was put into the fridge/freezer
+    var expiryDate: Date?           // fridge only (optional)
     var notes: String?
 
     init(
@@ -97,12 +97,12 @@ final class FoodItem {
         self.notes = notes
     }
 
-    /// Liczba dni od włożenia do lodówki/zamrażarki
+    /// Number of days since the item was put into the fridge/freezer
     var daysSinceAdded: Int {
         Calendar.current.dateComponents([.day], from: dateAdded, to: .now).day ?? 0
     }
 
-    /// Liczba dni do upływu terminu ważności (tylko lodówka), ujemna gdy przeterminowane
+    /// Number of days until the expiry date (fridge only), negative once expired
     var daysUntilExpiry: Int? {
         guard let expiryDate else { return nil }
         return Calendar.current.dateComponents([.day], from: .now, to: expiryDate).day
@@ -118,12 +118,12 @@ final class FoodItem {
         return days < 0
     }
 
-    /// Ocena czasu przechowywania w zamrażarce — orientacyjne progi (dni)
+    /// Rating of the freezer storage time — rough thresholds (days)
     var freezerFreshness: FreezerFreshness {
         switch daysSinceAdded {
-        case ..<90: return .fresh          // do 3 miesięcy
-        case 90..<180: return .useSoon     // 3-6 miesięcy
-        default: return .old               // ponad 6 miesięcy
+        case ..<90: return .fresh          // up to 3 months
+        case 90..<180: return .useSoon     // 3-6 months
+        default: return .old               // more than 6 months
         }
     }
 }

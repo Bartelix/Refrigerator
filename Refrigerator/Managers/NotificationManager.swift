@@ -1,18 +1,18 @@
 import Foundation
 @preconcurrency import UserNotifications
 
-/// Zarządza lokalnymi powiadomieniami (offline, bez serwera).
+/// Manages local notifications (offline, no server).
 ///
-/// Ograniczenie systemowe: iOS pozwala na maks. 64 zaplanowane powiadomienia
-/// na aplikację jednocześnie. Przy dużej liczbie produktów w zamrażarce nie da się
-/// zaplanować "wszystkich cotygodniowych przypomnień na rok do przodu" dla każdego z nich.
+/// System limit: iOS allows at most 64 scheduled notifications per app at a time.
+/// With many items in the freezer there is no way to schedule "every weekly reminder
+/// for a year ahead" for each of them.
 ///
-/// Rozwiązanie: dla zamrażarki planujemy zawsze tylko NAJBLIŻSZE nadchodzące przypomnienie
-/// dla danego produktu (1 miesiąc od włożenia, potem co tydzień). Przy każdym otwarciu
-/// aplikacji `rescheduleAll(items:)` przelicza i odświeża te przypomnienia — więc jeśli
-/// otwierasz appkę choć raz na jakiś czas, seria powiadomień "co tydzień" działa płynnie.
-/// Dla lodówki planujemy oba przypomnienia (5 i 3 dni przed terminem) na raz — to tylko
-/// 2 powiadomienia na produkt, więc mieszczą się bez problemu.
+/// Solution: for the freezer we always schedule only the NEXT upcoming reminder for
+/// a given item (1 month after it was put in, then weekly). Every time the app is
+/// opened, `rescheduleAll(items:)` recomputes and refreshes those reminders — so as
+/// long as you open the app every once in a while, the "weekly" series runs smoothly.
+/// For the fridge we schedule both reminders (5 and 3 days before the expiry date) at
+/// once — that is only 2 notifications per item, so they fit without trouble.
 @MainActor
 final class NotificationManager {
     static let shared = NotificationManager()
@@ -21,11 +21,11 @@ final class NotificationManager {
     private let expiryReminderDaysBefore = [5, 3, 1, 0]
     private let freezerFirstReminderAfterDays = 30
     private let freezerReminderIntervalDays = 7
-    private let notificationHour = 9 // godzina wysyłki, 9:00 rano
+    private let notificationHour = 9 // delivery hour, 9:00 in the morning
 
     private init() {}
 
-    // MARK: - Uprawnienia
+    // MARK: - Authorization
 
     func requestAuthorizationIfNeeded() {
         let c = center
@@ -35,9 +35,9 @@ final class NotificationManager {
         }
     }
 
-    // MARK: - Publiczne API
+    // MARK: - Public API
 
-    /// Planuje / odświeża powiadomienia dla pojedynczego produktu (wywołuj po dodaniu/edycji).
+    /// Schedules / refreshes the notifications for a single item (call it after adding/editing).
     func scheduleReminders(for item: FoodItem) {
         cancelAllNotifications(for: item)
 
@@ -50,7 +50,7 @@ final class NotificationManager {
         }
     }
 
-    /// Usuwa wszystkie zaplanowane powiadomienia dla produktu (wywołuj przed usunięciem produktu).
+    /// Removes every scheduled notification for an item (call it before deleting the item).
     func cancelAllNotifications(for item: FoodItem) {
         let prefix = item.id.uuidString
         let c = center
@@ -62,15 +62,15 @@ final class NotificationManager {
         }
     }
 
-    /// Przelicza i odświeża powiadomienia dla wszystkich produktów. Wołaj przy starcie
-    /// aplikacji i za każdym razem, gdy wraca na pierwszy plan.
+    /// Recomputes and refreshes the notifications for every item. Call it on app
+    /// launch and every time the app returns to the foreground.
     func rescheduleAll(items: [FoodItem]) {
         for item in items {
             scheduleReminders(for: item)
         }
     }
 
-    // MARK: - Termin ważności (lodówka i zamrażarka)
+    // MARK: - Expiry date (fridge and freezer)
 
     private func scheduleExpiryReminders(for item: FoodItem) {
         guard let expiryDate = item.expiryDate else { return }
@@ -114,14 +114,14 @@ final class NotificationManager {
         }
     }
 
-    // MARK: - Zamrażarka: czas przechowywania
+    // MARK: - Freezer: storage time
 
     private func scheduleNextFreezerReminder(for item: FoodItem) {
         let daysSinceAdded = Calendar.current.dateComponents(
             [.day], from: item.dateAdded, to: .now
         ).day ?? 0
 
-        // Wyznacz najbliższy próg z serii: 30, 37, 44, 51... dni od włożenia
+        // Find the nearest threshold in the series: 30, 37, 44, 51... days since added
         var nextThreshold = freezerFirstReminderAfterDays
         while nextThreshold <= daysSinceAdded {
             nextThreshold += freezerReminderIntervalDays
@@ -143,7 +143,7 @@ final class NotificationManager {
         )
     }
 
-    // MARK: - Pomocnicze
+    // MARK: - Helpers
 
     private func schedule(content: UNMutableNotificationContent, at date: Date, identifier: String) {
         var components = Calendar.current.dateComponents([.year, .month, .day], from: date)

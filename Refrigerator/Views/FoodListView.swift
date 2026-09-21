@@ -184,7 +184,7 @@ struct FoodListView: View {
         }
     }
 
-    /// Krótkie potwierdzenie cofnięcia — znika samo po chwili.
+    /// Short confirmation of the undo — disappears on its own after a moment.
     @ViewBuilder
     private var undoToast: some View {
         if let undoMessage {

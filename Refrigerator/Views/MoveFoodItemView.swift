@@ -1,14 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// Widok konfiguracji przeniesienia produktu między lodówką a zamrażarką.
+/// View for setting up a move of an item between the fridge and the freezer.
 ///
-/// Przeniesienie odbywa się albo po ilości, albo po wadze — zależnie od tego, jak
-/// opisana jest pozycja. Waga zapisana przy pozycji dotyczy jednej sztuki, więc przy
-/// przenoszeniu części sztuk pozostaje bez zmian po obu stronach.
+/// The move happens either by quantity or by weight — depending on how the item is
+/// described. The weight stored on an item refers to a single piece, so when only
+/// part of the pieces is moved it stays unchanged on both sides.
 struct MoveFoodItemView: View {
     let item: FoodItem
-    /// Wywoływane po udanym przeniesieniu (np. aby zamknąć widok edycji).
+    /// Called after a successful move (e.g. to dismiss the edit view).
     var onComplete: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var modelContext
@@ -18,20 +18,20 @@ struct MoveFoodItemView: View {
     @State private var quantityText: String = ""
     @State private var weightText: String = ""
 
-    /// Sposób przenoszenia pozycji.
+    /// How the item is moved.
     private enum MoveMode {
-        /// Dzielenie po liczbie sztuk — waga jednej sztuki pozostaje bez zmian.
+        /// Split by the number of pieces — the weight of a single piece stays unchanged.
         case quantity
-        /// Dzielenie po wadze — dotyczy pozycji bez ilości lub z jedną sztuką.
+        /// Split by weight — applies to items without a quantity or with a single piece.
         case weight
-        /// Brak ilości i wagi — pozycja przenoszona w całości.
+        /// No quantity and no weight — the item is moved as a whole.
         case whole
     }
 
     private var destination: StorageLocation { item.location.opposite }
 
-    /// Pozycja z więcej niż jedną sztuką dzielona jest po ilości; pojedyncza sztuka
-    /// (lub pozycja bez ilości) z podaną wagą — po wadze.
+    /// An item with more than one piece is split by quantity; a single piece
+    /// (or an item without a quantity) that has a weight — by weight.
     private var mode: MoveMode {
         if let quantity = item.quantity, quantity > 1 { return .quantity }
         if item.weightInGrams != nil { return .weight }
@@ -45,7 +45,7 @@ struct MoveFoodItemView: View {
         Double(weightText.replacingOccurrences(of: ",", with: "."))
     }
 
-    /// Poprawność wprowadzonych wartości — musi być dodatnia i nie większa niż dostępna.
+    /// Validity of the entered value — it must be positive and no larger than what is available.
     private var isValid: Bool {
         switch mode {
         case .quantity:
@@ -158,7 +158,7 @@ struct MoveFoodItemView: View {
 
         let previous = FoodItemSnapshot(item)
 
-        // Ilość i waga nowej pozycji oraz to, co zostaje w pozycji źródłowej.
+        // Quantity and weight of the new item, plus what stays on the source item.
         let movedQuantity: Int?
         let movedWeight: Double?
         let remainingQuantity: Int?
@@ -168,7 +168,7 @@ struct MoveFoodItemView: View {
         case .quantity:
             let moveQuantity = parsedQuantity ?? 0
             movedQuantity = moveQuantity
-            // Waga dotyczy jednej sztuki, więc obie pozycje zachowują tę samą wartość.
+            // The weight refers to a single piece, so both items keep the same value.
             movedWeight = item.weightInGrams
             remainingQuantity = (item.quantity ?? 0) - moveQuantity
             remainingWeight = item.weightInGrams
@@ -185,7 +185,7 @@ struct MoveFoodItemView: View {
             remainingWeight = nil
         }
 
-        // Po podziale zostaje coś w źródle tylko wtedy, gdy zmniejszana wartość jest dodatnia.
+        // After a split something is left on the source only when the reduced value is positive.
         let keepsRemainder: Bool
         switch mode {
         case .quantity: keepsRemainder = (remainingQuantity ?? 0) > 0
@@ -194,7 +194,7 @@ struct MoveFoodItemView: View {
         }
 
         if keepsRemainder {
-            // Podział pozycji — nowa pozycja w miejscu docelowym, źródło pomniejszone.
+            // Splitting the item — a new item at the destination, the source reduced.
             let movedItem = FoodItem(
                 name: item.name,
                 location: destination,
@@ -214,7 +214,7 @@ struct MoveFoodItemView: View {
             NotificationManager.shared.scheduleReminders(for: movedItem)
             undoActions.recordMove(previous: previous, createdItem: movedItem)
         } else {
-            // Przeniesienie całości — wystarczy zmienić lokalizację.
+            // Moving the whole item — changing the location is enough.
             NotificationManager.shared.cancelAllNotifications(for: item)
             item.location = destination
             item.dateAdded = .now
