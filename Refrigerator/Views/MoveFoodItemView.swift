@@ -85,7 +85,9 @@ struct MoveFoodItemView: View {
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
-                                .padding(.trailing, 4)
+                                // Keep the field away from the screen edge so it is
+                                // easier to tap on its right side.
+                                .padding(.trailing, 12)
                         }
                         Text("Dostępne: \(item.quantity ?? 0) szt.")
                             .font(.caption)
@@ -109,7 +111,7 @@ struct MoveFoodItemView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
-                                .padding(.trailing, 4)
+                                .padding(.trailing, 12)
                         }
                         Text("Dostępne: \(formattedWeight(item.weightInGrams ?? 0))")
                             .font(.caption)
