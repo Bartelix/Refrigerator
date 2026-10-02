@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FoodRowView: View {
     let item: FoodItem
+    /// Shown while searching, since results can come from either tab.
+    var showsLocation: Bool = false
 
     @Environment(\.locale) private var locale
 
@@ -18,9 +20,16 @@ struct FoodRowView: View {
                 Text(item.name)
                     .font(.headline)
 
-                Text(item.category.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(item.category.displayName)
+                    if showsLocation {
+                        Text(verbatim: "•")
+                        Label(item.location.displayName, systemImage: item.location.systemImage)
+                            .labelStyle(.titleAndIcon)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
                     if let quantity = item.quantity {

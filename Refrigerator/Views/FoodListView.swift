@@ -44,10 +44,14 @@ struct FoodListView: View {
         _allItems = Query(sort: \FoodItem.dateAdded, order: .reverse)
     }
 
-    private var filteredAndSorted: [FoodItem] {
-        var items = allItems.filter { $0.location == location }
+    /// While searching, results span both the fridge and the freezer instead of
+    /// just this tab's location, so matching items are never hidden by the tab.
+    private var isSearching: Bool { !searchText.isEmpty }
 
-        if !searchText.isEmpty {
+    private var filteredAndSorted: [FoodItem] {
+        var items = isSearching ? allItems : allItems.filter { $0.location == location }
+
+        if isSearching {
             items = items.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
         }
 
@@ -119,7 +123,7 @@ struct FoodListView: View {
                 } else {
                     Section {
                         ForEach(filteredAndSorted) { item in
-                            FoodRowView(item: item)
+                            FoodRowView(item: item, showsLocation: isSearching)
                                 .contentShape(Rectangle())
                                 .onTapGesture { itemToEdit = item }
                                 .swipeActions(edge: .leading) {
@@ -142,7 +146,11 @@ struct FoodListView: View {
             }
             .overlay(alignment: .bottom) { undoToast }
             .navigationTitle(location.displayName)
-            .searchable(text: $searchText, prompt: Text("Search by name"))
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("Search by name")
+            )
             .toolbar {
                 if let action = undoActions.lastAction {
                     ToolbarItem(placement: .topBarLeading) {
@@ -196,7 +204,7 @@ struct FoodListView: View {
                 AddEditFoodItemView(location: location)
             }
             .sheet(item: $itemToEdit) { item in
-                AddEditFoodItemView(location: location, itemToEdit: item)
+                AddEditFoodItemView(location: item.location, itemToEdit: item)
             }
             .sheet(item: $itemToMove) { item in
                 MoveFoodItemView(item: item)
