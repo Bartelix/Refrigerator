@@ -13,14 +13,6 @@ extension StorageLocation {
         }
     }
 
-    /// Label of the action that moves an item into this location.
-    var moveHereLabel: LocalizedStringKey {
-        switch self {
-        case .fridge: "Move to the fridge"
-        case .freezer: "Move to the freezer"
-        }
-    }
-
     /// Label of the date picker for when an item was put in.
     var dateAddedLabel: LocalizedStringKey {
         switch self {

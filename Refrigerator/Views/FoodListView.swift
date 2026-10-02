@@ -130,10 +130,7 @@ struct FoodListView: View {
                                     Button {
                                         itemToMove = item
                                     } label: {
-                                        Label(
-                                            item.location.opposite.moveHereLabel,
-                                            systemImage: item.location.opposite.systemImage
-                                        )
+                                        Label("Move", systemImage: "arrow.left.arrow.right")
                                     }
                                     .tint(.blue)
                                 }

@@ -17,12 +17,9 @@ enum StorageLocation: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// The opposite location — used when moving an item.
-    var opposite: StorageLocation {
-        switch self {
-        case .fridge: return .freezer
-        case .freezer: return .fridge
-        }
+    /// Locations an item kept here can be moved to, in tab order.
+    var otherLocations: [StorageLocation] {
+        Self.allCases.filter { $0 != self }
     }
 }
 

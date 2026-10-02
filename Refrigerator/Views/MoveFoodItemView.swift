@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// View for setting up a move of an item between the fridge and the freezer.
+/// View for setting up a move of an item between storage locations.
 ///
 /// The move happens either by quantity or by weight — depending on how the item is
 /// described. The weight stored on an item refers to a single piece, so when only
@@ -15,8 +15,17 @@ struct MoveFoodItemView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(UndoActionManager.self) private var undoActions
 
+    @State private var destination: StorageLocation
     @State private var quantityText: String = ""
     @State private var weightText: String = ""
+
+    init(item: FoodItem, onComplete: (() -> Void)? = nil) {
+        self.item = item
+        self.onComplete = onComplete
+        // Preselect the first of the possible destinations; with more than one the
+        // user picks from them below.
+        _destination = State(initialValue: item.location.otherLocations.first ?? item.location)
+    }
 
     /// How the item is moved.
     private enum MoveMode {
@@ -27,8 +36,6 @@ struct MoveFoodItemView: View {
         /// No quantity and no weight — the item is moved as a whole.
         case whole
     }
-
-    private var destination: StorageLocation { item.location.opposite }
 
     /// An item with more than one piece is split by quantity; a single piece
     /// (or an item without a quantity) that has a weight — by weight.
@@ -73,6 +80,16 @@ struct MoveFoodItemView: View {
                     .font(.subheadline.weight(.medium))
 
                     LabeledContent("Item", value: item.name)
+
+                    // With a single possible destination there is nothing to choose.
+                    if item.location.otherLocations.count > 1 {
+                        Picker("Move to", selection: $destination) {
+                            ForEach(item.location.otherLocations) { location in
+                                Label(location.displayName, systemImage: location.systemImage)
+                                    .tag(location)
+                            }
+                        }
+                    }
                 }
 
                 switch mode {

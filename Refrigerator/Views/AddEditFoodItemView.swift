@@ -85,16 +85,12 @@ struct AddEditFoodItemView: View {
                     Button(isEditing ? "Save" : "Add") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                if let item = itemToEdit {
+                if itemToEdit != nil {
                     ToolbarItem(placement: .topBarLeading) {
                         Button {
                             showingMoveSheet = true
                         } label: {
-                            Label(
-                                item.location.opposite.moveHereLabel,
-                                systemImage: item.location.opposite.systemImage
-                            )
-                            .symbolVariant(.fill)
+                            Label("Move", systemImage: "arrow.left.arrow.right")
                         }
                     }
                     ToolbarItem(placement: .destructiveAction) {
