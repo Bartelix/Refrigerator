@@ -10,7 +10,7 @@ struct AddEditFoodItemView: View {
     @Environment(UndoActionManager.self) private var undoActions
 
     @State private var name: String = ""
-    @State private var category: FoodCategory = .other
+    @State private var categorySelection: CategorySelection = .builtIn(.other)
     @State private var weightText: String = ""
     @State private var quantityText: String = ""
     @State private var dateAdded: Date = .now
@@ -27,9 +27,9 @@ struct AddEditFoodItemView: View {
                 Section("Basic information") {
                     TextField("Name (e.g. Beef steak)", text: $name)
 
-                    Picker("Category", selection: $category) {
+                    Picker("Category", selection: $categorySelection) {
                         ForEach(FoodCategory.displayOrder) { cat in
-                            Text(cat.displayName).tag(cat)
+                            Text(cat.displayName).tag(CategorySelection.builtIn(cat))
                         }
                     }
                 }
@@ -110,7 +110,7 @@ struct AddEditFoodItemView: View {
     private func populateIfEditing() {
         guard let item = itemToEdit else { return }
         name = item.name
-        category = item.category
+        categorySelection = item.categorySelection
         weightText = item.weightInGrams.map { String(format: "%g", $0) } ?? ""
         quantityText = item.quantity.map(String.init) ?? ""
         dateAdded = item.dateAdded
@@ -131,7 +131,7 @@ struct AddEditFoodItemView: View {
         if let item = itemToEdit {
             let previous = FoodItemSnapshot(item)
             item.name = trimmedName
-            item.category = category
+            item.categorySelection = categorySelection
             item.weightInGrams = weight
             item.quantity = quantity
             item.dateAdded = dateAdded
@@ -146,7 +146,8 @@ struct AddEditFoodItemView: View {
             let newItem = FoodItem(
                 name: trimmedName,
                 location: location,
-                category: category,
+                category: categorySelection.effectiveCategory,
+                customCategoryName: categorySelection.customName,
                 weightInGrams: weight,
                 quantity: quantity ?? 1,
                 dateAdded: dateAdded,
@@ -172,7 +173,7 @@ struct AddEditFoodItemView: View {
         case .fridge:
             days = 3
         case .freezer:
-            days = category.freezerShelfLifeDays
+            days = categorySelection.effectiveCategory.freezerShelfLifeDays
         case .pantry:
             return nil
         }

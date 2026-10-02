@@ -37,7 +37,7 @@ struct FoodListView: View {
     @State private var showingAddSheet = false
     @State private var itemToEdit: FoodItem?
     @State private var itemToMove: FoodItem?
-    @State private var categoryFilter: FoodCategory?
+    @State private var categoryFilter: CategorySelection?
 
     init(location: StorageLocation) {
         self.location = location
@@ -56,7 +56,7 @@ struct FoodListView: View {
         }
 
         if let categoryFilter {
-            items = items.filter { $0.category == categoryFilter }
+            items = items.filter { $0.categorySelection == categoryFilter }
         }
 
         switch sortOption {
@@ -172,9 +172,9 @@ struct FoodListView: View {
                         }
                         Divider()
                         Picker("Category", selection: $categoryFilter) {
-                            Text("All categories").tag(FoodCategory?.none)
+                            Text("All categories").tag(CategorySelection?.none)
                             ForEach(FoodCategory.displayOrder) { cat in
-                                Text(cat.displayName).tag(FoodCategory?.some(cat))
+                                Text(cat.displayName).tag(CategorySelection?.some(.builtIn(cat)))
                             }
                         }
                         Divider()

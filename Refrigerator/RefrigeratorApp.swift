@@ -4,7 +4,7 @@ import SwiftData
 @main
 struct RefrigeratorApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([FoodItem.self])
+        let schema = Schema([FoodItem.self, CustomFoodCategory.self])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {

@@ -62,3 +62,14 @@ extension FoodCategory {
         }
     }
 }
+
+extension CategorySelection {
+    /// Label of the category. A built-in name is translated; a custom one is the
+    /// user's own text and is shown verbatim, so it never reaches the string catalog.
+    var displayText: Text {
+        switch self {
+        case let .builtIn(category): Text(category.displayName)
+        case let .custom(name): Text(verbatim: name)
+        }
+    }
+}

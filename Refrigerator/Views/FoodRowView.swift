@@ -21,7 +21,7 @@ struct FoodRowView: View {
                     .font(.headline)
 
                 HStack(spacing: 4) {
-                    Text(item.category.displayName)
+                    item.categorySelection.displayText
                     if showsLocation {
                         Text(verbatim: "•")
                         Label(item.location.displayName, systemImage: item.location.systemImage)

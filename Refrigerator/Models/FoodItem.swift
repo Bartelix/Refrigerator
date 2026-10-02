@@ -96,6 +96,10 @@ final class FoodItem {
     var name: String
     var location: StorageLocation
     var category: FoodCategory
+    /// Name of the user-defined category, or `nil` when `category` applies. Both are
+    /// stored: `category` predates custom categories and still drives the freezer
+    /// shelf life, so a custom category keeps it at `other` and takes over the label.
+    var customCategoryName: String?
     var weightInGrams: Double?      // optional weight in grams
     var quantity: Int?              // optional quantity (pcs.)
     var dateAdded: Date             // date the item was put into the fridge/freezer
@@ -107,6 +111,7 @@ final class FoodItem {
         name: String,
         location: StorageLocation,
         category: FoodCategory = .other,
+        customCategoryName: String? = nil,
         weightInGrams: Double? = nil,
         quantity: Int? = nil,
         dateAdded: Date = .now,
@@ -117,11 +122,24 @@ final class FoodItem {
         self.name = name
         self.location = location
         self.category = category
+        self.customCategoryName = customCategoryName
         self.weightInGrams = weightInGrams
         self.quantity = quantity
         self.dateAdded = dateAdded
         self.expiryDate = expiryDate
         self.notes = notes
+    }
+
+    /// The category as shown and picked in the interface.
+    var categorySelection: CategorySelection {
+        get {
+            if let name = customCategoryName, !name.isEmpty { return .custom(name) }
+            return .builtIn(category)
+        }
+        set {
+            category = newValue.effectiveCategory
+            customCategoryName = newValue.customName
+        }
     }
 
     /// Number of days since the item was put into the fridge/freezer

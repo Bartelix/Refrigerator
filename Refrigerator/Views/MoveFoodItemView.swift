@@ -218,6 +218,7 @@ struct MoveFoodItemView: View {
                 name: item.name,
                 location: destination,
                 category: item.category,
+                customCategoryName: item.customCategoryName,
                 weightInGrams: movedWeight,
                 quantity: movedQuantity,
                 dateAdded: .now,

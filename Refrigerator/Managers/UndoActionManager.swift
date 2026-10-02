@@ -7,6 +7,7 @@ struct FoodItemSnapshot: Equatable {
     var name: String
     var location: StorageLocation
     var category: FoodCategory
+    var customCategoryName: String?
     var weightInGrams: Double?
     var quantity: Int?
     var dateAdded: Date
@@ -18,6 +19,7 @@ struct FoodItemSnapshot: Equatable {
         name = item.name
         location = item.location
         category = item.category
+        customCategoryName = item.customCategoryName
         weightInGrams = item.weightInGrams
         quantity = item.quantity
         dateAdded = item.dateAdded
@@ -32,6 +34,7 @@ struct FoodItemSnapshot: Equatable {
             name: name,
             location: location,
             category: category,
+            customCategoryName: customCategoryName,
             weightInGrams: weightInGrams,
             quantity: quantity,
             dateAdded: dateAdded,
@@ -45,6 +48,7 @@ struct FoodItemSnapshot: Equatable {
         item.name = name
         item.location = location
         item.category = category
+        item.customCategoryName = customCategoryName
         item.weightInGrams = weightInGrams
         item.quantity = quantity
         item.dateAdded = dateAdded
