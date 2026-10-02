@@ -35,17 +35,17 @@
 
 ## What the app contains
 
-- Two tabs: **Fridge** ("Lodówka") and **Freezer** ("Zamrażarka")
+- Three tabs: **Fridge** ("Lodówka"), **Freezer** ("Zamrażarka") and **Pantry** ("Spiżarnia") — the pantry holds everything stored outside the fridge (water, pasta, canned goods, ...)
 - Every item has: name, category, optional weight (g), optional quantity (pcs.), date added, notes
-- Fridge only: optional expiry date (color coding: orange ≤3 days, red once expired)
+- Fridge and pantry: optional expiry date (color coding: orange ≤3 days, red once expired). The fridge defaults to 3 days from the date added; the pantry gets no default, since shelf life there is printed on the packaging
 - Freezer only: a "X days in the freezer" badge computed automatically from the date added — gray up to 3 months, orange for 3–6 months, red beyond 6 months (rough thresholds, easy to change in `FoodItem.swift` → `freezerFreshness`)
 - Sorting: by date (newest/oldest) and alphabetically
 - Filtering: search by name + filter by category
 - Summary at the bottom of the list: item count + total weight
-- **Undo**: the ↩ button in the top-left corner undoes the last action (add, edit, delete, move). The history is shared between both tabs and you can undo up to the last 20 actions one by one
+- **Undo**: the ↩ button in the top-left corner undoes the last action (add, edit, delete, move). The history is shared between all tabs and you can undo up to the last 20 actions one by one
 - Data is stored locally via SwiftData (SQLite underneath), no internet at all
 - **Local notifications** (offline, no server):
-  - Fridge: a reminder 5 and 3 days before the expiry date
+  - Fridge and pantry: a reminder 5 and 3 days before the expiry date
   - Freezer: a reminder 1 month after the item was added, then weekly
   - On first launch the app asks for notification permission — confirm it in the system dialog
   - **Important:** iOS allows a maximum of 64 scheduled notifications per app. For the freezer the app always schedules only the next upcoming reminder per item and refreshes them every time the app is opened — so for the "weekly" series to run without gaps, open the app every once in a while (e.g. whenever you go shopping). For the fridge both reminders (5 and 3 days) are scheduled right away, since that is only 2 per item.

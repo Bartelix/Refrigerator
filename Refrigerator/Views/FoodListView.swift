@@ -44,8 +44,8 @@ struct FoodListView: View {
         _allItems = Query(sort: \FoodItem.dateAdded, order: .reverse)
     }
 
-    /// While searching, results span both the fridge and the freezer instead of
-    /// just this tab's location, so matching items are never hidden by the tab.
+    /// While searching, results span every storage location instead of just this
+    /// tab's own, so matching items are never hidden by the tab.
     private var isSearching: Bool { !searchText.isEmpty }
 
     private var filteredAndSorted: [FoodItem] {

@@ -10,6 +10,7 @@ extension StorageLocation {
         switch self {
         case .fridge: "Fridge"
         case .freezer: "Freezer"
+        case .pantry: "Pantry"
         }
     }
 
@@ -18,6 +19,7 @@ extension StorageLocation {
         switch self {
         case .fridge: "Date put in the fridge"
         case .freezer: "Date put in the freezer"
+        case .pantry: "Date put in the pantry"
         }
     }
 }

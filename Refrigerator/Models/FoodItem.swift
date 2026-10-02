@@ -7,6 +7,7 @@ import SwiftData
 enum StorageLocation: String, Codable, CaseIterable, Identifiable {
     case fridge = "Lodówka"
     case freezer = "Zamrażarka"
+    case pantry = "Spiżarnia"
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum StorageLocation: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .fridge: return "refrigerator"
         case .freezer: return "snowflake"
+        case .pantry: return "cabinet"
         }
     }
 

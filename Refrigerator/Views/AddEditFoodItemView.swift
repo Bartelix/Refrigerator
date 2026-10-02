@@ -164,13 +164,17 @@ struct AddEditFoodItemView: View {
     /// Default expiry date, used when the user did not set one.
     /// - Fridge: 3 days from the date added.
     /// - Freezer: depends on the category (365 / 180 / 90 days).
-    private func defaultExpiryDate() -> Date {
+    /// - Pantry: none. Shelf life there ranges from weeks to years and is printed on
+    ///   the packaging, so guessing one would only produce misleading reminders.
+    private func defaultExpiryDate() -> Date? {
         let days: Int
         switch location {
         case .fridge:
             days = 3
         case .freezer:
             days = category.freezerShelfLifeDays
+        case .pantry:
+            return nil
         }
         return Calendar.current.date(byAdding: .day, value: days, to: dateAdded) ?? dateAdded
     }

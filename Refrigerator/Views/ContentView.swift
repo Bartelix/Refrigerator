@@ -9,17 +9,14 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            FoodListView(location: .fridge)
-                .tabItem {
-                    Label(StorageLocation.fridge.displayName, systemImage: StorageLocation.fridge.systemImage)
-                }
-                .tag(StorageLocation.fridge)
-
-            FoodListView(location: .freezer)
-                .tabItem {
-                    Label(StorageLocation.freezer.displayName, systemImage: StorageLocation.freezer.systemImage)
-                }
-                .tag(StorageLocation.freezer)
+            // One tab per storage location, in declaration order.
+            ForEach(StorageLocation.allCases) { location in
+                FoodListView(location: location)
+                    .tabItem {
+                        Label(location.displayName, systemImage: location.systemImage)
+                    }
+                    .tag(location)
+            }
         }
         // Overriding the locale is what switches the language of every view below,
         // including the sheets they present.

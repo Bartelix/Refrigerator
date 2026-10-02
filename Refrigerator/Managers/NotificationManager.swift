@@ -48,7 +48,7 @@ final class NotificationManager {
         cancelAllNotifications(for: item)
 
         switch item.location {
-        case .fridge:
+        case .fridge, .pantry:
             scheduleExpiryReminders(for: item)
         case .freezer:
             scheduleNextFreezerReminder(for: item)
