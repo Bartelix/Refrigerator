@@ -3,9 +3,12 @@ import SwiftUI
 struct FoodRowView: View {
     let item: FoodItem
 
+    @Environment(\.locale) private var locale
+
     private var dateFormatter: DateFormatter {
         let df = DateFormatter()
         df.dateStyle = .medium
+        df.locale = locale
         return df
     }
 
@@ -15,13 +18,17 @@ struct FoodRowView: View {
                 Text(item.name)
                     .font(.headline)
 
-                Text(item.category.rawValue)
+                Text(item.category.displayName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
                     if let quantity = item.quantity {
-                        Label("\(quantity) szt.", systemImage: "number")
+                        Label {
+                            Text("\(quantity) pcs.")
+                        } icon: {
+                            Image(systemName: "number")
+                        }
                     }
                     if let weight = item.weightInGrams {
                         Label(formattedWeight(weight), systemImage: "scalemass")
@@ -41,7 +48,7 @@ struct FoodRowView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text("Włożono")
+                Text("Added")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Text(dateFormatter.string(from: item.dateAdded))
@@ -50,14 +57,14 @@ struct FoodRowView: View {
                 if item.location == .freezer {
                     daysInFreezerBadge
                 } else {
-                    Text("\(item.daysSinceAdded) dni temu")
+                    Text("\(item.daysSinceAdded) days ago")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
                 if let expiry = item.expiryDate {
                     Divider()
-                    Text("Ważne do")
+                    Text("Best before")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(dateFormatter.string(from: expiry))
@@ -82,7 +89,7 @@ struct FoodRowView: View {
                 Image(systemName: icon)
                     .font(.caption2)
             }
-            Text("\(days) dni w zamrażarce")
+            Text("\(days) days in the freezer")
                 .font(.caption2)
                 .fontWeight(item.freezerFreshness == .fresh ? .regular : .semibold)
         }

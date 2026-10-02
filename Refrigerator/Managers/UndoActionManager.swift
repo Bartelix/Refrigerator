@@ -53,23 +53,29 @@ struct FoodItemSnapshot: Equatable {
     }
 }
 
-/// Kind of a recorded action, used to build the user-facing description.
+/// Kind of a recorded action.
 enum UndoActionKind: Equatable {
     case add
     case edit
     case delete
     case move
+}
 
-    /// Polish phrase in the accusative case, so it reads correctly after
-    /// „Cofnij” and „Cofnięto”.
-    var phrase: String {
-        switch self {
-        case .add: return "dodanie"
-        case .edit: return "edycję"
-        case .delete: return "usunięcie"
-        case .move: return "przeniesienie"
-        }
-    }
+/// What an action applied to.
+enum UndoSubject: Equatable {
+    /// A single item, described by its name.
+    case named(String)
+    /// Several items at once, described by how many.
+    case count(Int)
+}
+
+/// Kind and subject of an action — everything needed to describe it to the user.
+///
+/// Only the two values are stored, never a finished sentence: the wording depends on
+/// the selected language, so it is built in the view layer instead.
+struct UndoActionSummary: Equatable {
+    let kind: UndoActionKind
+    let subject: UndoSubject
 }
 
 /// A single reversible action, described by what it did to the store.
@@ -78,32 +84,23 @@ enum UndoActionKind: Equatable {
 /// the same operation: drop what the action created, bring back what it removed,
 /// and restore the previous values of what it changed.
 struct UndoStep: Equatable {
-    let kind: UndoActionKind
-    /// Preformatted name of what the action applied to, e.g. „Stek wołowy” or "3 pozycji".
-    let subject: String
+    let summary: UndoActionSummary
     /// Items created by the action — undo deletes them.
     var inserted: [FoodItemSnapshot] = []
     /// Items deleted by the action — undo brings them back.
     var removed: [FoodItemSnapshot] = []
     /// State of items before the action changed them — undo restores it.
     var updated: [FoodItemSnapshot] = []
-
-    /// Full user-facing description, e.g. „usunięcie „Stek wołowy””.
-    var description: String { "\(kind.phrase) \(subject)" }
 }
 
 /// Keeps a stack of recently performed actions so the user can reverse them one by one.
 @MainActor
 @Observable
 final class UndoActionManager {
-    /// Kind of the action that will be reversed next, or `nil` when there is nothing
-    /// to undo. Used for the short label shown on the undo button.
-    private(set) var lastActionKind: UndoActionKind?
-
-    /// Full description of that action, e.g. „usunięcie „Stek wołowy””. Stored
-    /// (instead of derived from `steps`) so that views observe only this value and
-    /// not every change to the stack.
-    private(set) var lastActionDescription: String?
+    /// The action that will be reversed next, or `nil` when there is nothing to undo.
+    /// Stored (instead of derived from `steps`) so that views observe only this value
+    /// and not every change to the stack.
+    private(set) var lastAction: UndoActionSummary?
 
     private var steps: [UndoStep] = []
     private let maxSteps = 20
@@ -112,8 +109,7 @@ final class UndoActionManager {
 
     func recordAdd(_ item: FoodItem) {
         record(UndoStep(
-            kind: .add,
-            subject: quoted(item.name),
+            summary: UndoActionSummary(kind: .add, subject: .named(item.name)),
             inserted: [FoodItemSnapshot(item)]
         ))
     }
@@ -122,17 +118,16 @@ final class UndoActionManager {
         // Saving without touching anything is not worth an undo step.
         guard FoodItemSnapshot(current) != previous else { return }
         record(UndoStep(
-            kind: .edit,
-            subject: quoted(current.name),
+            summary: UndoActionSummary(kind: .edit, subject: .named(current.name)),
             updated: [previous]
         ))
     }
 
     func recordDelete(_ items: [FoodItem]) {
         guard !items.isEmpty else { return }
+        let subject: UndoSubject = items.count == 1 ? .named(items[0].name) : .count(items.count)
         record(UndoStep(
-            kind: .delete,
-            subject: items.count == 1 ? quoted(items[0].name) : "\(items.count) pozycji",
+            summary: UndoActionSummary(kind: .delete, subject: subject),
             removed: items.map(FoodItemSnapshot.init)
         ))
     }
@@ -141,8 +136,7 @@ final class UndoActionManager {
     /// of the quantity/weight stayed behind and a new item was created at the destination.
     func recordMove(previous: FoodItemSnapshot, createdItem: FoodItem?) {
         record(UndoStep(
-            kind: .move,
-            subject: quoted(previous.name),
+            summary: UndoActionSummary(kind: .move, subject: .named(previous.name)),
             inserted: createdItem.map { [FoodItemSnapshot($0)] } ?? [],
             updated: [previous]
         ))
@@ -158,10 +152,10 @@ final class UndoActionManager {
 
     // MARK: - Undo
 
-    /// Reverses the most recent action and returns its description, or `nil` when the
+    /// Reverses the most recent action and returns its summary, or `nil` when the
     /// stack is empty.
     @discardableResult
-    func undoLast(in context: ModelContext) -> String? {
+    func undoLast(in context: ModelContext) -> UndoActionSummary? {
         guard let step = steps.popLast() else { return nil }
         updatePendingAction()
 
@@ -190,18 +184,13 @@ final class UndoActionManager {
             NotificationManager.shared.scheduleReminders(for: item)
         }
 
-        return step.description
+        return step.summary
     }
 
     // MARK: - Helpers
 
-    /// Keeps the published properties in sync with the top of the stack.
+    /// Keeps the published property in sync with the top of the stack.
     private func updatePendingAction() {
-        lastActionKind = steps.last?.kind
-        lastActionDescription = steps.last?.description
-    }
-
-    private func quoted(_ name: String) -> String {
-        "„\(name)”"
+        lastAction = steps.last?.summary
     }
 }

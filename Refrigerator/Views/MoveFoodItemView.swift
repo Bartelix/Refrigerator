@@ -63,25 +63,27 @@ struct MoveFoodItemView: View {
             Form {
                 Section {
                     HStack {
-                        Label(item.location.rawValue, systemImage: item.location.systemImage)
+                        Label(item.location.displayName, systemImage: item.location.systemImage)
                         Spacer()
                         Image(systemName: "arrow.right")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Label(destination.rawValue, systemImage: destination.systemImage)
+                        Label(destination.displayName, systemImage: destination.systemImage)
                     }
                     .font(.subheadline.weight(.medium))
 
-                    LabeledContent("Produkt", value: item.name)
+                    LabeledContent("Item", value: item.name)
                 }
 
                 switch mode {
                 case .quantity:
                     Section {
                         HStack {
-                            Text("Ilość (szt.)")
+                            Text("Quantity (pcs.)")
                             Spacer()
-                            TextField("", text: $quantityText)
+                            // The field is prefilled, so it needs no placeholder;
+                            // an empty literal would end up in the string catalog.
+                            TextField(text: $quantityText) { Text(verbatim: "") }
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
@@ -89,54 +91,54 @@ struct MoveFoodItemView: View {
                                 // easier to tap on its right side.
                                 .padding(.trailing, 12)
                         }
-                        Text("Dostępne: \(item.quantity ?? 0) szt.")
+                        Text("Available: \(item.quantity ?? 0) pcs.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if let weight = item.weightInGrams {
-                            Text("Waga: \(formattedWeight(weight)) / szt. — bez zmian")
+                            Text("Weight: \(formattedWeight(weight)) per piece — unchanged")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } header: {
-                        Text("Ile przenieść (po ilości)")
+                        Text("How much to move (by quantity)")
                     } footer: {
-                        Text("Domyślnie przenoszona jest cała ilość. Zmień wartość, aby przenieść tylko część sztuk — pozycja zostanie podzielona, a waga jednej sztuki pozostanie taka sama.")
+                        Text("The whole quantity is moved by default. Change the value to move only some of the pieces — the item will be split, and the weight of a single piece will stay the same.")
                     }
                 case .weight:
                     Section {
                         HStack {
-                            Text("Waga (g)")
+                            Text("Weight (g)")
                             Spacer()
-                            TextField("", text: $weightText)
+                            TextField(text: $weightText) { Text(verbatim: "") }
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
                                 .padding(.trailing, 12)
                         }
-                        Text("Dostępne: \(formattedWeight(item.weightInGrams ?? 0))")
+                        Text("Available: \(formattedWeight(item.weightInGrams ?? 0))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } header: {
-                        Text("Ile przenieść (po wadze)")
+                        Text("How much to move (by weight)")
                     } footer: {
-                        Text("Domyślnie przenoszona jest cała waga. Zmień wartość, aby przenieść tylko część — pozycja zostanie podzielona.")
+                        Text("The whole weight is moved by default. Change the value to move only part of it — the item will be split.")
                     }
                 case .whole:
                     Section {
-                        Text("Produkt nie ma określonej ilości ani wagi — zostanie przeniesiony w całości.")
+                        Text("The item has no quantity or weight set — it will be moved as a whole.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("Przenieś produkt")
+            .navigationTitle("Move item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Anuluj") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Przenieś") { performMove() }
+                    Button("Move") { performMove() }
                         .disabled(!isValid)
                 }
             }
@@ -230,7 +232,7 @@ struct MoveFoodItemView: View {
 #Preview {
     MoveFoodItemView(
         item: FoodItem(
-            name: "Stek wołowy",
+            name: "Beef steak",
             location: .freezer,
             category: .beef,
             weightInGrams: 500,
@@ -239,4 +241,5 @@ struct MoveFoodItemView: View {
     )
     .modelContainer(for: FoodItem.self, inMemory: true)
     .environment(UndoActionManager())
+    .environment(AppSettings())
 }

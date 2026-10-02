@@ -23,6 +23,12 @@ final class NotificationManager {
     private let freezerReminderIntervalDays = 7
     private let notificationHour = 9 // delivery hour, 9:00 in the morning
 
+    /// Language the notification texts are written in. Unlike the views, notifications
+    /// are composed here rather than by SwiftUI, so the selected language has to be
+    /// applied explicitly. Changing it only affects notifications scheduled afterwards,
+    /// which is why `ContentView` reschedules everything when the language changes.
+    var locale: Locale = .autoupdatingCurrent
+
     private init() {}
 
     // MARK: - Authorization
@@ -63,7 +69,7 @@ final class NotificationManager {
     }
 
     /// Recomputes and refreshes the notifications for every item. Call it on app
-    /// launch and every time the app returns to the foreground.
+    /// launch, every time the app returns to the foreground, and after a language change.
     func rescheduleAll(items: [FoodItem]) {
         for item in items {
             scheduleReminders(for: item)
@@ -100,17 +106,17 @@ final class NotificationManager {
 
     private func expiryTitle(daysBefore: Int) -> String {
         switch daysBefore {
-        case 0: return "Termin ważności mija dziś"
-        case 1: return "Termin ważności mija jutro"
-        default: return "Zbliża się termin ważności"
+        case 0: localized(LocalizedStringResource("Expiry date is today"))
+        case 1: localized(LocalizedStringResource("Expiry date is tomorrow"))
+        default: localized(LocalizedStringResource("Expiry date is approaching"))
         }
     }
 
     private func expiryBody(for item: FoodItem, daysBefore: Int) -> String {
         switch daysBefore {
-        case 0: return "\(item.name) — ostatni dzień ważności"
-        case 1: return "\(item.name) — wygasa jutro"
-        default: return "\(item.name) — termin ważności za \(daysBefore) \(dayWord(daysBefore))"
+        case 0: localized(LocalizedStringResource("\(item.name) — last day of freshness"))
+        case 1: localized(LocalizedStringResource("\(item.name) — expires tomorrow"))
+        default: localized(LocalizedStringResource("\(item.name) — expires in \(daysBefore) days"))
         }
     }
 
@@ -132,8 +138,10 @@ final class NotificationManager {
         ), triggerDate > .now else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Produkt długo w zamrażarce"
-        content.body = "\(item.name) leży w zamrażarce już \(nextThreshold) dni"
+        content.title = localized(LocalizedStringResource("Item has been in the freezer a long time"))
+        content.body = localized(
+            LocalizedStringResource("\(item.name) has been in the freezer for \(nextThreshold) days")
+        )
         content.sound = .default
 
         schedule(
@@ -155,7 +163,10 @@ final class NotificationManager {
         center.add(request)
     }
 
-    private func dayWord(_ count: Int) -> String {
-        count == 1 ? "dzień" : "dni"
+    /// Resolves a string in the language the notifications are currently written in.
+    private func localized(_ resource: LocalizedStringResource) -> String {
+        var resource = resource
+        resource.locale = locale
+        return String(localized: resource)
     }
 }

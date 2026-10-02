@@ -24,21 +24,21 @@ struct AddEditFoodItemView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Podstawowe informacje") {
-                    TextField("Nazwa (np. Stek wołowy)", text: $name)
+                Section("Basic information") {
+                    TextField("Name (e.g. Beef steak)", text: $name)
 
-                    Picker("Kategoria", selection: $category) {
+                    Picker("Category", selection: $category) {
                         ForEach(FoodCategory.allCases) { cat in
-                            Text(cat.rawValue).tag(cat)
+                            Text(cat.displayName).tag(cat)
                         }
                     }
                 }
 
-                Section("Ilość") {
+                Section("Amount") {
                     HStack {
-                        Text("Ilość (szt.)")
+                        Text("Quantity (pcs.)")
                         Spacer()
-                        TextField("opcjonalnie", text: $quantityText)
+                        TextField("optional", text: $quantityText)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 120)
@@ -47,9 +47,9 @@ struct AddEditFoodItemView: View {
                             .padding(.trailing, 12)
                     }
                     HStack {
-                        Text("Waga (g)")
+                        Text("Weight (g)")
                         Spacer()
-                        TextField("opcjonalnie", text: $weightText)
+                        TextField("optional", text: $weightText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 120)
@@ -57,32 +57,32 @@ struct AddEditFoodItemView: View {
                     }
                 }
 
-                Section("Daty") {
+                Section("Dates") {
                     DatePicker(
-                        location == .fridge ? "Data włożenia do lodówki" : "Data włożenia do zamrażarki",
+                        location.dateAddedLabel,
                         selection: $dateAdded,
                         displayedComponents: .date
                     )
 
-                    Toggle("Ustaw termin ważności", isOn: $hasExpiryDate)
+                    Toggle("Set an expiry date", isOn: $hasExpiryDate)
                     if hasExpiryDate {
-                        DatePicker("Ważne do", selection: $expiryDate, displayedComponents: .date)
+                        DatePicker("Best before", selection: $expiryDate, displayedComponents: .date)
                     }
                 }
 
-                Section("Notatki") {
-                    TextField("np. z zamrażarki górnej, marynowany itd.", text: $notes, axis: .vertical)
+                Section("Notes") {
+                    TextField("e.g. from the top freezer drawer, marinated, etc.", text: $notes, axis: .vertical)
                         .lineLimit(2...4)
                 }
             }
-            .navigationTitle(isEditing ? "Edytuj produkt" : "Nowy produkt")
+            .navigationTitle(isEditing ? "Edit item" : "New item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Anuluj") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "Zapisz" : "Dodaj") { save() }
+                    Button(isEditing ? "Save" : "Add") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
                 if let item = itemToEdit {
@@ -91,14 +91,14 @@ struct AddEditFoodItemView: View {
                             showingMoveSheet = true
                         } label: {
                             Label(
-                                "Przenieś do: \(item.location.opposite.rawValue)",
+                                item.location.opposite.moveHereLabel,
                                 systemImage: item.location.opposite.systemImage
                             )
                             .symbolVariant(.fill)
                         }
                     }
                     ToolbarItem(placement: .destructiveAction) {
-                        Button("Usuń", role: .destructive) { deleteAndDismiss() }
+                        Button("Delete", role: .destructive) { deleteAndDismiss() }
                     }
                 }
             }
@@ -193,4 +193,5 @@ struct AddEditFoodItemView: View {
     AddEditFoodItemView(location: .freezer)
         .modelContainer(for: FoodItem.self, inMemory: true)
         .environment(UndoActionManager())
+        .environment(AppSettings())
 }

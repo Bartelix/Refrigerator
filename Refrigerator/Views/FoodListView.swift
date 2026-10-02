@@ -2,14 +2,25 @@ import SwiftUI
 import SwiftData
 
 enum SortOption: String, CaseIterable, Identifiable {
-    case expiryFarthest = "Termin ważności (najdalszy)"
-    case expiryNearest = "Termin ważności (najbliższy)"
-    case dateNewestFirst = "Data (najnowsze)"
-    case dateOldestFirst = "Data (najstarsze)"
-    case nameAZ = "Nazwa (A-Z)"
-    case nameZA = "Nazwa (Z-A)"
+    case expiryFarthest
+    case expiryNearest
+    case dateNewestFirst
+    case dateOldestFirst
+    case nameAZ
+    case nameZA
 
     var id: String { rawValue }
+
+    var displayName: LocalizedStringKey {
+        switch self {
+        case .expiryFarthest: "Expiry date (farthest)"
+        case .expiryNearest: "Expiry date (nearest)"
+        case .dateNewestFirst: "Date (newest)"
+        case .dateOldestFirst: "Date (oldest)"
+        case .nameAZ: "Name (A-Z)"
+        case .nameZA: "Name (Z-A)"
+        }
+    }
 }
 
 struct FoodListView: View {
@@ -17,9 +28,10 @@ struct FoodListView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(UndoActionManager.self) private var undoActions
+    @Environment(AppSettings.self) private var settings
     @Query private var allItems: [FoodItem]
 
-    @State private var undoMessage: String?
+    @State private var undoneAction: UndoActionSummary?
     @State private var searchText = ""
     @State private var sortOption: SortOption = .expiryNearest
     @State private var showingAddSheet = false
@@ -75,7 +87,9 @@ struct FoodListView: View {
         return items
     }
 
-    private var summaryText: String {
+    /// Summary in the list header. Built by joining `Text` pieces rather than plain
+    /// strings, so each part is localized and pluralized on its own.
+    private var summaryText: Text {
         let items = filteredAndSorted
         let count = items.count
         // An item's weight refers to a single piece, so the total is weight × quantity.
@@ -85,24 +99,22 @@ struct FoodListView: View {
             return partial + weight * Double(item.quantity ?? 1)
         }
 
-        var parts = ["\(count) poz."]
-        if totalQuantity != count {
-            parts.append("\(totalQuantity) szt.")
-        }
-        if totalWeight > 0 {
-            parts.append("łącznie \(formattedWeight(totalWeight))")
-        }
-        return parts.joined(separator: " • ")
+        let countText = Text("\(count) items")
+        let quantityText = totalQuantity != count ? Text(" • \(totalQuantity) pcs.") : Text(verbatim: "")
+        let weightText = totalWeight > 0 ? Text(" • \(formattedWeight(totalWeight)) in total") : Text(verbatim: "")
+        return Text("\(countText)\(quantityText)\(weightText)")
     }
 
     var body: some View {
+        @Bindable var settings = settings
+
         NavigationStack {
             List {
                 if filteredAndSorted.isEmpty {
                     ContentUnavailableView(
-                        "Brak produktów",
+                        "No items",
                         systemImage: location.systemImage,
-                        description: Text("Dodaj coś, stukając w +")
+                        description: Text("Add something by tapping +")
                     )
                 } else {
                     Section {
@@ -115,7 +127,7 @@ struct FoodListView: View {
                                         itemToMove = item
                                     } label: {
                                         Label(
-                                            "Przenieś do: \(item.location.opposite.rawValue)",
+                                            item.location.opposite.moveHereLabel,
                                             systemImage: item.location.opposite.systemImage
                                         )
                                     }
@@ -124,15 +136,15 @@ struct FoodListView: View {
                         }
                         .onDelete(perform: deleteItems)
                     } header: {
-                        Text(summaryText)
+                        summaryText
                     }
                 }
             }
             .overlay(alignment: .bottom) { undoToast }
-            .navigationTitle(location.rawValue)
-            .searchable(text: $searchText, prompt: "Szukaj po nazwie")
+            .navigationTitle(location.displayName)
+            .searchable(text: $searchText, prompt: Text("Search by name"))
             .toolbar {
-                if let kind = undoActions.lastActionKind {
+                if let action = undoActions.lastAction {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: performUndo) {
                             // An explicit stack — a Label is collapsed to icon-only by the
@@ -140,25 +152,33 @@ struct FoodListView: View {
                             // full description (with the name) goes to VoiceOver.
                             HStack(spacing: 4) {
                                 Image(systemName: "arrow.uturn.backward")
-                                Text(kind.phrase)
+                                Text(action.shortLabel)
                             }
                         }
-                        .accessibilityLabel("Cofnij \(undoActions.lastActionDescription ?? kind.phrase)")
+                        .accessibilityLabel(action.undoLabel)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Picker("Sortuj", selection: $sortOption) {
+                        Picker("Sort", selection: $sortOption) {
                             ForEach(SortOption.allCases) { option in
-                                Text(option.rawValue).tag(option)
+                                Text(option.displayName).tag(option)
                             }
                         }
                         Divider()
-                        Picker("Kategoria", selection: $categoryFilter) {
-                            Text("Wszystkie kategorie").tag(FoodCategory?.none)
+                        Picker("Category", selection: $categoryFilter) {
+                            Text("All categories").tag(FoodCategory?.none)
                             ForEach(FoodCategory.allCases) { cat in
-                                Text(cat.rawValue).tag(FoodCategory?.some(cat))
+                                Text(cat.displayName).tag(FoodCategory?.some(cat))
                             }
+                        }
+                        Divider()
+                        Picker("Language", selection: $settings.language) {
+                            Text("System").tag(AppLanguage.system)
+                            // Language names stay in their own language, so they are
+                            // recognizable whichever language the app is currently in.
+                            Text(verbatim: "Polski").tag(AppLanguage.polish)
+                            Text(verbatim: "English").tag(AppLanguage.english)
                         }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
@@ -187,8 +207,8 @@ struct FoodListView: View {
     /// Short confirmation of the undo — disappears on its own after a moment.
     @ViewBuilder
     private var undoToast: some View {
-        if let undoMessage {
-            Text(undoMessage)
+        if let undoneAction {
+            undoneAction.undidLabel
                 .font(.subheadline)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -196,16 +216,16 @@ struct FoodListView: View {
                 .shadow(radius: 4, y: 2)
                 .padding(.bottom, 12)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .task(id: undoMessage) {
+                .task(id: undoneAction) {
                     try? await Task.sleep(for: .seconds(2.5))
-                    withAnimation { self.undoMessage = nil }
+                    withAnimation { self.undoneAction = nil }
                 }
         }
     }
 
     private func performUndo() {
-        guard let description = undoActions.undoLast(in: modelContext) else { return }
-        withAnimation { undoMessage = "Cofnięto \(description)" }
+        guard let action = undoActions.undoLast(in: modelContext) else { return }
+        withAnimation { undoneAction = action }
     }
 
     private func deleteItems(at offsets: IndexSet) {
@@ -233,4 +253,5 @@ func formattedWeight(_ grams: Double) -> String {
     FoodListView(location: .freezer)
         .modelContainer(for: FoodItem.self, inMemory: true)
         .environment(UndoActionManager())
+        .environment(AppSettings())
 }

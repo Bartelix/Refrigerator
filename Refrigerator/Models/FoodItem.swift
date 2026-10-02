@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 
+/// Raw values of this enum and of `FoodCategory` are what SwiftData writes into the
+/// store, so they must never change — items already saved would fail to load. The text
+/// shown to the user lives in `displayName` instead, and is translated.
 enum StorageLocation: String, Codable, CaseIterable, Identifiable {
     case fridge = "Lodówka"
     case freezer = "Zamrażarka"
@@ -42,7 +45,7 @@ enum FoodCategory: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// The default „Inne” category is shown first in the list,
+    /// The default `other` category is shown first in the list,
     /// the rest follow in declaration order.
     static var allCases: [FoodCategory] {
         [.other] + [
