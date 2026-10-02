@@ -173,7 +173,7 @@ struct FoodListView: View {
                         Divider()
                         Picker("Category", selection: $categoryFilter) {
                             Text("All categories").tag(FoodCategory?.none)
-                            ForEach(FoodCategory.allCases) { cat in
+                            ForEach(FoodCategory.displayOrder) { cat in
                                 Text(cat.displayName).tag(FoodCategory?.some(cat))
                             }
                         }

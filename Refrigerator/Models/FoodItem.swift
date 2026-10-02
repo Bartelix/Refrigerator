@@ -26,32 +26,57 @@ enum StorageLocation: String, Codable, CaseIterable, Identifiable {
 }
 
 enum FoodCategory: String, Codable, CaseIterable, Identifiable {
+    // Meat and fish
     case beef = "Wołowina"
     case pork = "Wieprzowina"
     case poultry = "Drób"
     case game = "Dziczyzna"
     case mutton = "Baranina"
     case fish = "Ryby"
+
+    // Dairy and eggs
     case butter = "Masło"
     case dairy = "Nabiał"
     case eggs = "Jajka"
+
+    // Fresh produce
     case vegetables = "Warzywa"
     case fruits = "Owoce"
+
+    // Pantry staples
+    case bread = "Pieczywo"
+    case pasta = "Makaron"
+    case grains = "Kasze i ryż"
+    case flour = "Mąka"
+    case cereals = "Płatki śniadaniowe"
+    case legumes = "Strączkowe"
+    case cannedGoods = "Konserwy"
+    case preserves = "Przetwory"
     case sauces = "Sosy"
+    case spices = "Przyprawy"
+    case oils = "Oleje i tłuszcze"
+
+    // Drinks
+    case water = "Woda"
     case drinks = "Napoje"
+    case coffeeAndTea = "Kawa i herbata"
+    case alcohol = "Alkohol"
+
+    // Snacks and ready-to-eat
+    case nuts = "Orzechy i bakalie"
+    case sweets = "Słodycze"
+    case snacks = "Przekąski"
     case readyMeal = "Danie gotowe"
+
     case other = "Inne"
 
     var id: String { rawValue }
 
-    /// The default `other` category is shown first in the list,
-    /// the rest follow in declaration order.
-    static var allCases: [FoodCategory] {
-        [.other] + [
-            .beef, .pork, .poultry, .game, .mutton, .fish,
-            .butter, .dairy, .eggs, .vegetables, .fruits,
-            .sauces, .drinks, .readyMeal
-        ]
+    /// Categories in the order they are offered for picking: the default `other`
+    /// first, the rest in declaration order. Derived from `allCases` rather than
+    /// spelled out, so a newly added case can never be left out by accident.
+    static var displayOrder: [FoodCategory] {
+        [.other] + allCases.filter { $0 != .other }
     }
 
     /// Default freezer shelf life (in days), used when no expiry date

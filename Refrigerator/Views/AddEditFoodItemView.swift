@@ -28,7 +28,7 @@ struct AddEditFoodItemView: View {
                     TextField("Name (e.g. Beef steak)", text: $name)
 
                     Picker("Category", selection: $category) {
-                        ForEach(FoodCategory.allCases) { cat in
+                        ForEach(FoodCategory.displayOrder) { cat in
                             Text(cat.displayName).tag(cat)
                         }
                     }
