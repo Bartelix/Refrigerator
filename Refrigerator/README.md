@@ -41,6 +41,7 @@
 - Freezer only: a "X days in the freezer" badge computed automatically from the date added — gray up to 3 months, orange for 3–6 months, red beyond 6 months (rough thresholds, easy to change in `FoodItem.swift` → `freezerFreshness`)
 - Sorting: by date (newest/oldest) and alphabetically
 - Filtering: search by name + filter by category
+- **Categories**: a built-in list covering the fridge, the freezer and the pantry, plus any you add yourself. Both the item form and the filter open a searchable lookup; typing a name nothing matches offers to add it as a new category, and it is then offered for every later item. Search ignores case and Polish accents, so "maka" finds "Mąka". A category of your own can be removed as long as no item is filed under it
 - Summary at the bottom of the list: item count + total weight
 - **Undo**: the ↩ button in the top-left corner undoes the last action (add, edit, delete, move). The history is shared between all tabs and you can undo up to the last 20 actions one by one
 - Data is stored locally via SwiftData (SQLite underneath), no internet at all

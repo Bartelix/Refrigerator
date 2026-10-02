@@ -25,8 +25,12 @@ extension StorageLocation {
 }
 
 extension FoodCategory {
-    /// Name of the category, used in pickers and in the list rows.
-    var displayName: LocalizedStringKey {
+    /// Name of the category, used in the lookup and in the list rows.
+    ///
+    /// A `LocalizedStringResource` rather than a `LocalizedStringKey`, because the
+    /// category lookup matches what the user types against the translated names and
+    /// therefore needs them as plain strings — see `resolvedName(in:)`.
+    var displayName: LocalizedStringResource {
         switch self {
         case .beef: "Beef"
         case .pork: "Pork"
@@ -61,15 +65,23 @@ extension FoodCategory {
         case .other: "Other"
         }
     }
+
+    /// The translated name in a given language. Resolved explicitly rather than left
+    /// to SwiftUI, so that matching and rendering always agree on the same text.
+    func resolvedName(in locale: Locale) -> String {
+        var resource = displayName
+        resource.locale = locale
+        return String(localized: resource)
+    }
 }
 
 extension CategorySelection {
     /// Label of the category. A built-in name is translated; a custom one is the
-    /// user's own text and is shown verbatim, so it never reaches the string catalog.
-    var displayText: Text {
+    /// user's own text and is used as typed, so it never reaches the string catalog.
+    func resolvedName(in locale: Locale) -> String {
         switch self {
-        case let .builtIn(category): Text(category.displayName)
-        case let .custom(name): Text(verbatim: name)
+        case let .builtIn(category): category.resolvedName(in: locale)
+        case let .custom(name): name
         }
     }
 }

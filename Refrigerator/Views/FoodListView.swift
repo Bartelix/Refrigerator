@@ -29,6 +29,7 @@ struct FoodListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(UndoActionManager.self) private var undoActions
     @Environment(AppSettings.self) private var settings
+    @Environment(\.locale) private var locale
     @Query private var allItems: [FoodItem]
 
     @State private var undoneAction: UndoActionSummary?
@@ -38,6 +39,7 @@ struct FoodListView: View {
     @State private var itemToEdit: FoodItem?
     @State private var itemToMove: FoodItem?
     @State private var categoryFilter: CategorySelection?
+    @State private var showingCategoryFilter = false
 
     init(location: StorageLocation) {
         self.location = location
@@ -171,10 +173,20 @@ struct FoodListView: View {
                             }
                         }
                         Divider()
-                        Picker("Category", selection: $categoryFilter) {
-                            Text("All categories").tag(CategorySelection?.none)
-                            ForEach(FoodCategory.displayOrder) { cat in
-                                Text(cat.displayName).tag(CategorySelection?.some(.builtIn(cat)))
+                        // The category list is long enough to need searching, which a
+                        // menu cannot do — so the filter opens the same lookup the
+                        // add/edit sheet uses.
+                        Button {
+                            showingCategoryFilter = true
+                        } label: {
+                            Label {
+                                if let categoryFilter {
+                                    Text(verbatim: categoryFilter.resolvedName(in: locale))
+                                } else {
+                                    Text("All categories")
+                                }
+                            } icon: {
+                                Image(systemName: "tag")
                             }
                         }
                         Divider()
@@ -205,6 +217,22 @@ struct FoodListView: View {
             }
             .sheet(item: $itemToMove) { item in
                 MoveFoodItemView(item: item)
+            }
+            .sheet(isPresented: $showingCategoryFilter) {
+                NavigationStack {
+                    // Filtering by a category nothing is filed under yet would only
+                    // ever give an empty list, so creating one is not offered here.
+                    CategoryPickerView(
+                        selection: $categoryFilter,
+                        allowsAll: true,
+                        allowsCreating: false
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showingCategoryFilter = false }
+                        }
+                    }
+                }
             }
         }
     }

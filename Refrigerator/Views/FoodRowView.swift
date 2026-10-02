@@ -21,7 +21,7 @@ struct FoodRowView: View {
                     .font(.headline)
 
                 HStack(spacing: 4) {
-                    item.categorySelection.displayText
+                    Text(verbatim: item.categorySelection.resolvedName(in: locale))
                     if showsLocation {
                         Text(verbatim: "•")
                         Label(item.location.displayName, systemImage: item.location.systemImage)

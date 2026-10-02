@@ -8,6 +8,7 @@ struct AddEditFoodItemView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(UndoActionManager.self) private var undoActions
+    @Environment(\.locale) private var locale
 
     @State private var name: String = ""
     @State private var categorySelection: CategorySelection = .builtIn(.other)
@@ -21,15 +22,29 @@ struct AddEditFoodItemView: View {
 
     private var isEditing: Bool { itemToEdit != nil }
 
+    /// The lookup can clear its selection when it is used as a filter; here an item
+    /// always has a category, so a cleared one falls back to the default.
+    private var pickedCategory: Binding<CategorySelection?> {
+        Binding(
+            get: { categorySelection },
+            set: { categorySelection = $0 ?? .builtIn(.other) }
+        )
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Basic information") {
                     TextField("Name (e.g. Beef steak)", text: $name)
 
-                    Picker("Category", selection: $categorySelection) {
-                        ForEach(FoodCategory.displayOrder) { cat in
-                            Text(cat.displayName).tag(CategorySelection.builtIn(cat))
+                    // A pushed lookup rather than a picker: there are too many
+                    // categories to scroll through, and this is also where a new
+                    // one is added.
+                    NavigationLink {
+                        CategoryPickerView(selection: pickedCategory)
+                    } label: {
+                        LabeledContent("Category") {
+                            Text(verbatim: categorySelection.resolvedName(in: locale))
                         }
                     }
                 }
